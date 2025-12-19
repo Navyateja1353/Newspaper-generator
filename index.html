@@ -8,25 +8,23 @@
     <style>
         .newspaper-column { column-count: 3; column-gap: 20px; }
         .content-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; resize: both; overflow: auto; min-height: 200px; }
-        .whatsapp-msg { background: linear-gradient(45deg, #e3f2fd, #f3e5f5); border-left: 4px solid #2196f3; }
+        .whatsapp-msg { background: linear-gradient(45deg, #e3f2fd, #f3e5f5); border-left: 4px solid #2196f3; margin-bottom: 10px; }
+        .demo-mode { background: #fff3cd; border: 1px solid #ffeaa7; }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <h1>Believe It Newspaper Generator 🚀</h1>
         
-        <!-- WhatsApp API Keys Section -->
-        <div class="alert alert-info mb-4">
-            <strong>🔑 WhatsApp Setup:</strong> 
-            <input type="text" id="instanceID" class="form-control d-inline-block w-auto me-2" placeholder="Instance ID" style="width:200px;">
-            <input type="text" id="apiToken" class="form-control d-inline-block w-auto" placeholder="API Token" style="width:300px;">
-            <button id="connectWhatsApp" class="btn btn-primary ms-2">Connect WhatsApp</button>
+        <!-- Status Bar -->
+        <div class="alert alert-success demo-mode mb-4">
+            <strong>✅ DEMO MODE ACTIVE</strong> - Real newspaper ready! Click "Move to Preview" → "Generate PDF"
         </div>
         
         <section id="raw-data" class="mb-5">
-            <h2>1. Raw Data from WhatsApp <span id="status" class="badge bg-secondary">Not Connected</span></h2>
+            <h2>1. Raw Data from WhatsApp Channels <span id="status" class="badge bg-success">Demo Active - 5 Stories</span></h2>
             <div id="rawContent" class="content-box newspaper-column">
-                Enter WhatsApp keys above → Click Connect → See real messages!
+                Loading news stories...
             </div>
         </section>
         
@@ -61,7 +59,7 @@
                     <input type="number" id="columns" min="1" max="5" value="3" class="form-control">
                 </div>
                 <div class="col-md-3">
-                    <button id="moveToPreview" class="btn btn-info mt-3">→ Move to Preview</button>
+                    <button id="moveToPreview" class="btn btn-info mt-3">→ Move All to Preview</button>
                 </div>
                 <div class="col-md-3">
                     <button id="generatePDF" class="btn btn-success mt-3 w-100">📄 Generate PDF</button>
@@ -77,61 +75,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        // Global variables
-        let instanceID = '7105430513';
-        let apiToken = '85070daa21784b99a3197fd8cc1ba13aba1b8ea067f14e4f85';
+        // DEMO NEWS DATA - Real looking WhatsApp channels
+        const demoNews = [
+            { senderData: { chatId: 'BBC-News' }, messageData: { textMessageData: { textMessage: 'BREAKING: World leaders agree on new climate targets at COP30 summit in Brazil' }, timestamp: Math.floor(Date.now()/1000) - 3600 } },
+            { senderData: { chatId: 'CNN-Breaking' }, messageData: { textMessageData: { textMessage: 'Tech stocks surge 8% as AI chip breakthrough announced by NVIDIA' }, timestamp: Math.floor(Date.now()/1000) - 1800 } },
+            { senderData: { chatId: 'TimesofIndia' }, messageData: { textMessageData: { textMessage: 'Bengaluru: Heavy rains cause flooding on Outer Ring Road, traffic diverted' }, timestamp: Math.floor(Date.now()/1000) - 900 } },
+            { senderData: { chatId: 'EconomicTimes' }, messageData: { textMessageData: { textMessage: 'Rupee hits 85.50 vs Dollar as RBI intervenes in forex market' }, timestamp: Math.floor(Date.now()/1000) - 720 } },
+            { senderData: { chatId: 'SportsStar' }, messageData: { textMessageData: { textMessage: 'India beats Australia by 6 wickets in 2nd T20I, Rohit Sharma 92* unbeaten' }, timestamp: Math.floor(Date.now()/1000) - 300 } }
+        ];
 
-        // WhatsApp Connection
-        document.getElementById('connectWhatsApp').onclick = async () => {
-            instanceID = document.getElementById('instanceID').value.trim();
-            apiToken = document.getElementById('apiToken').value.trim();
-            
-            if (!instanceID || !apiToken) {
-                alert('Please enter both Instance ID and API Token!');
-                return;
-            }
-            
-            document.getElementById('status').textContent = 'Connecting...';
-            document.getElementById('status').className = 'badge bg-warning';
-            
-            await loadRawData();
-        };
-
-        // Load WhatsApp Data
+        // Load Demo Data (Auto-runs on page load)
         async function loadRawData() {
-            try {
-                if (!instanceID || !apiToken) {
-                    document.getElementById('rawContent').innerHTML = '<div class="alert alert-warning">Enter Green API keys → Click "Connect WhatsApp"</div>';
-                    return;
-                }
-                
-                const response = await fetch(`https://api.green-api.com/waInstance${instanceID}/receiveNotification/${apiToken}/last`);
-                const data = await response.json();
-                
-                const rawContent = document.getElementById('rawContent');
-                if (data && data.length > 0) {
-                    rawContent.innerHTML = data.map((msg, index) => 
-                        `<div class="whatsapp-msg p-3 mb-3 border rounded shadow-sm" draggable="true" ondragstart="drag(event, ${index})">
-                            <strong>${msg.senderData?.chatId?.split('@')[0] || 'Channel'}</strong>
-                            <br><small class="text-muted">${new Date(msg.messageData?.timestamp * 1000 || Date.now()).toLocaleString()}</small>
-                            <br>${msg.messageData?.textMessageData?.textMessage || '[Image/Video/Audio]'}
-                        </div>`
-                    ).join('');
-                    document.getElementById('status').textContent = `Connected! ${data.length} messages`;
-                    document.getElementById('status').className = 'badge bg-success';
-                } else {
-                    rawContent.innerHTML = '<div class="alert alert-success">✅ WhatsApp Connected! No new messages yet. Send a test message to see it here.</div>';
-                    document.getElementById('status').textContent = 'Connected - No messages';
-                    document.getElementById('status').className = 'badge bg-success';
-                }
-            } catch(e) {
-                document.getElementById('rawContent').innerHTML = `<div class="alert alert-danger">
-                    ❌ API Error: ${e.message}<br>
-                    <small>Check Instance ID & API Token. Make sure WhatsApp is authorized on Green-API dashboard.</small>
-                </div>`;
-                document.getElementById('status').textContent = 'Error';
-                document.getElementById('status').className = 'badge bg-danger';
-            }
+            const rawContent = document.getElementById('rawContent');
+            rawContent.innerHTML = demoNews.map((msg, index) => 
+                `<div class="whatsapp-msg p-3 mb-3 border rounded shadow-sm" draggable="true" ondragstart="drag(event, ${index})">
+                    <strong>📱 ${msg.senderData.chatId}</strong>
+                    <br><small class="text-muted">🕒 ${new Date(msg.messageData.timestamp * 1000).toLocaleString('en-IN')}</small>
+                    <br><strong>${msg.messageData.textMessageData.textMessage}</strong>
+                </div>`
+            ).join('');
+            
+            document.getElementById('status').textContent = 'Demo Active - 5 Stories Ready';
+            document.getElementById('status').className = 'badge bg-success';
         }
 
         // Page Orders
@@ -153,23 +118,31 @@
             document.getElementById('preview').style.columnCount = cols;
         };
 
-        // Move Raw Data to Preview (Drag & Drop)
+        // Move All to Preview
         document.getElementById('moveToPreview').onclick = () => {
             const rawItems = document.querySelectorAll('#rawContent .whatsapp-msg');
             const preview = document.getElementById('preview');
+            preview.innerHTML = ''; // Clear preview
             rawItems.forEach(item => {
                 preview.appendChild(item.cloneNode(true));
             });
+            alert('✅ All stories moved to preview! Now generate PDF!');
         };
 
-        // Drag & Drop functions
+        // Drag & Drop
         function drag(ev, index) {
             ev.dataTransfer.setData("text", index);
         }
 
-        // PDF Generation (Improved)
+        // PDF Generation
         document.getElementById('generatePDF').onclick = async () => {
             const preview = document.getElementById('preview');
+            
+            if (preview.innerHTML.trim() === 'Preview your newspaper here...' || preview.children.length === 0) {
+                alert('⚠️ Move stories to Preview first using "→ Move All to Preview" button!');
+                return;
+            }
+            
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
             
@@ -177,7 +150,8 @@
                 const canvas = await html2canvas(preview, {
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
                 });
                 
                 const imgData = canvas.toDataURL('image/png');
@@ -198,8 +172,8 @@
                 }
 
                 doc.save('believe-it-newspaper.pdf');
+                alert('🎉 Newspaper PDF downloaded! Check your Downloads folder.');
             } catch(e) {
-                // Fallback method
                 doc.html(preview, {
                     callback: function(doc) { doc.save('believe-it-newspaper.pdf'); },
                     x: 10, y: 10, width: 190, windowWidth: 800
@@ -207,10 +181,11 @@
             }
         };
 
-        // Auto-refresh WhatsApp data every 30 seconds
-        setInterval(loadRawData, 30000);
+        // START APP - Load demo data immediately
+        loadRawData();
     </script>
 </body>
 </html>
 
                
+
