@@ -8,16 +8,25 @@
     <style>
         .newspaper-column { column-count: 3; column-gap: 20px; }
         .content-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; resize: both; overflow: auto; min-height: 200px; }
+        .whatsapp-msg { background: linear-gradient(45deg, #e3f2fd, #f3e5f5); border-left: 4px solid #2196f3; }
     </style>
 </head>
 <body>
     <div class="container-fluid">
-        <h1>Believe It Newspaper Generator</h1>
+        <h1>Believe It Newspaper Generator 🚀</h1>
+        
+        <!-- WhatsApp API Keys Section -->
+        <div class="alert alert-info mb-4">
+            <strong>🔑 WhatsApp Setup:</strong> 
+            <input type="text" id="instanceID" class="form-control d-inline-block w-auto me-2" placeholder="Instance ID" style="width:200px;">
+            <input type="text" id="apiToken" class="form-control d-inline-block w-auto" placeholder="API Token" style="width:300px;">
+            <button id="connectWhatsApp" class="btn btn-primary ms-2">Connect WhatsApp</button>
+        </div>
         
         <section id="raw-data" class="mb-5">
-            <h2>1. Raw Data from WhatsApp</h2>
+            <h2>1. Raw Data from WhatsApp <span id="status" class="badge bg-secondary">Not Connected</span></h2>
             <div id="rawContent" class="content-box newspaper-column">
-                Sample news will load here...
+                Enter WhatsApp keys above → Click Connect → See real messages!
             </div>
         </section>
         
@@ -39,7 +48,7 @@
         <section id="content-sizing">
             <h2>3. Content Sizing & Preview</h2>
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label>Page Size:</label>
                     <select id="pageSize" class="form-select">
                         <option>A4</option>
@@ -47,52 +56,161 @@
                         <option>Broadsheet</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label>Columns:</label>
                     <input type="number" id="columns" min="1" max="5" value="3" class="form-control">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
+                    <button id="moveToPreview" class="btn btn-info mt-3">→ Move to Preview</button>
+                </div>
+                <div class="col-md-3">
                     <button id="generatePDF" class="btn btn-success mt-3 w-100">📄 Generate PDF</button>
                 </div>
             </div>
-            <div id="preview" class="content-box mt-3 newspaper-column p-4">
-                Drag content here for preview...
+            <div id="preview" class="content-box mt-3 newspaper-column p-4 bg-white">
+                Preview your newspaper here...
             </div>
         </section>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        // Add page functionality
+        // Global variables
+        let instanceID = '7105430513';
+        let apiToken = '85070daa21784b99a3197fd8cc1ba13aba1b8ea067f14e4f85';
+
+        // WhatsApp Connection
+        document.getElementById('connectWhatsApp').onclick = async () => {
+            instanceID = document.getElementById('instanceID').value.trim();
+            apiToken = document.getElementById('apiToken').value.trim();
+            
+            if (!instanceID || !apiToken) {
+                alert('Please enter both Instance ID and API Token!');
+                return;
+            }
+            
+            document.getElementById('status').textContent = 'Connecting...';
+            document.getElementById('status').className = 'badge bg-warning';
+            
+            await loadRawData();
+        };
+
+        // Load WhatsApp Data
+        async function loadRawData() {
+            try {
+                if (!instanceID || !apiToken) {
+                    document.getElementById('rawContent').innerHTML = '<div class="alert alert-warning">Enter Green API keys → Click "Connect WhatsApp"</div>';
+                    return;
+                }
+                
+                const response = await fetch(`https://api.green-api.com/waInstance${instanceID}/receiveNotification/${apiToken}/last`);
+                const data = await response.json();
+                
+                const rawContent = document.getElementById('rawContent');
+                if (data && data.length > 0) {
+                    rawContent.innerHTML = data.map((msg, index) => 
+                        `<div class="whatsapp-msg p-3 mb-3 border rounded shadow-sm" draggable="true" ondragstart="drag(event, ${index})">
+                            <strong>${msg.senderData?.chatId?.split('@')[0] || 'Channel'}</strong>
+                            <br><small class="text-muted">${new Date(msg.messageData?.timestamp * 1000 || Date.now()).toLocaleString()}</small>
+                            <br>${msg.messageData?.textMessageData?.textMessage || '[Image/Video/Audio]'}
+                        </div>`
+                    ).join('');
+                    document.getElementById('status').textContent = `Connected! ${data.length} messages`;
+                    document.getElementById('status').className = 'badge bg-success';
+                } else {
+                    rawContent.innerHTML = '<div class="alert alert-success">✅ WhatsApp Connected! No new messages yet. Send a test message to see it here.</div>';
+                    document.getElementById('status').textContent = 'Connected - No messages';
+                    document.getElementById('status').className = 'badge bg-success';
+                }
+            } catch(e) {
+                document.getElementById('rawContent').innerHTML = `<div class="alert alert-danger">
+                    ❌ API Error: ${e.message}<br>
+                    <small>Check Instance ID & API Token. Make sure WhatsApp is authorized on Green-API dashboard.</small>
+                </div>`;
+                document.getElementById('status').textContent = 'Error';
+                document.getElementById('status').className = 'badge bg-danger';
+            }
+        }
+
+        // Page Orders
         document.getElementById('addPage').onclick = () => {
             const li = document.createElement('li');
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.innerHTML = `Page ${document.querySelectorAll('#pageList li').length + 1} <div><button class="btn btn-sm btn-primary">↑ Up</button><button class="btn btn-sm btn-secondary">↓ Down</button><button class="btn btn-sm btn-danger">Delete</button></div>`;
+            li.innerHTML = `Page ${document.querySelectorAll('#pageList li').length + 1} 
+                <div>
+                    <button class="btn btn-sm btn-primary">↑ Up</button>
+                    <button class="btn btn-sm btn-secondary">↓ Down</button>
+                    <button class="btn btn-sm btn-danger">Delete</button>
+                </div>`;
             document.getElementById('pageList').appendChild(li);
         };
 
-        // Column preview update
+        // Columns Preview
         document.getElementById('columns').onchange = () => {
             const cols = document.getElementById('columns').value;
             document.getElementById('preview').style.columnCount = cols;
         };
 
-        // PDF Export
-        document.getElementById('generatePDF').onclick = () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.html(document.getElementById('preview'), {
-                callback: function (doc) {
-                    doc.save('believe-it-newspaper.pdf');
-                },
-                x: 10, y: 10, width: 190, windowWidth: 800
+        // Move Raw Data to Preview (Drag & Drop)
+        document.getElementById('moveToPreview').onclick = () => {
+            const rawItems = document.querySelectorAll('#rawContent .whatsapp-msg');
+            const preview = document.getElementById('preview');
+            rawItems.forEach(item => {
+                preview.appendChild(item.cloneNode(true));
             });
         };
+
+        // Drag & Drop functions
+        function drag(ev, index) {
+            ev.dataTransfer.setData("text", index);
+        }
+
+        // PDF Generation (Improved)
+        document.getElementById('generatePDF').onclick = async () => {
+            const preview = document.getElementById('preview');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            try {
+                const canvas = await html2canvas(preview, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                doc.save('believe-it-newspaper.pdf');
+            } catch(e) {
+                // Fallback method
+                doc.html(preview, {
+                    callback: function(doc) { doc.save('believe-it-newspaper.pdf'); },
+                    x: 10, y: 10, width: 190, windowWidth: 800
+                });
+            }
+        };
+
+        // Auto-refresh WhatsApp data every 30 seconds
+        setInterval(loadRawData, 30000);
     </script>
 </body>
 </html>
 
-3. Press Ctrl+S to save
-4. Close Notepad
-5. Double-click index.html - webpage opens in browser
+               
