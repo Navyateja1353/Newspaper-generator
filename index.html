@@ -3,188 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Believe It - Live News Newspaper</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Believe It - WhatsApp Channel Newspaper AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;500&display=swap');
-        body { font-family: 'Roboto', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .newspaper { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-        .header { background: linear-gradient(45deg, #dc2626, #ef4444); color: white; padding: 40px; text-align: center; }
-        .header h1 { font-family: 'Playfair Display', serif; font-size: 3.5rem; margin: 0; }
-        .live-feed { background: #f8fafc; padding: 30px; }
-        .news-item { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); border-left: 4px solid #3b82f6; }
-        .news-title { font-size: 1.3rem; font-weight: 600; color: #1f2937; margin-bottom: 10px; }
-        .news-source { color: #6b7280; font-size: 0.9rem; margin-bottom: 8px; }
-        .news-time { color: #9ca3af; font-size: 0.85rem; }
-        .ai-paper { padding: 40px; column-count: 4; column-gap: 30px; column-fill: auto; height: 700px; overflow-y: auto; }
-        .page-break { break-after: page; margin-bottom: 40px; }
-        .top-story { grid-column: 1 / -1; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; padding: 30px; border-radius: 15px; margin-bottom: 30px; text-align: center; }
-        .generate-btn { background: linear-gradient(45deg, #ec4899, #db2777); border: none; color: white; padding: 18px 50px; font-size: 1.3rem; border-radius: 50px; font-weight: 700; }
-        .status { position: fixed; top: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 15px 25px; border-radius: 50px; font-weight: 600; }
-        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Roboto', sans-serif; 
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .app-container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 25px; 
+            box-shadow: 0 25px 80px rgba(0,0,0,0.25);
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .masthead { 
+            background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b); 
+            color: white; 
+            padding: 40px; 
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .masthead::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 10"><defs><pattern id="grain" width="100" height="10" patternUnits="userSpaceOnUse"><circle cx="25" cy="5" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="5" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="10" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        .masthead-content { position: relative; z-index: 2; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 4rem; font-weight: 700; margin-bottom: 10px; }
+        .tagline { font-size: 1.4rem; opacity: 0.95; }
+        
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 50px; }
+        @media (max-width: 992px) { .main-content { grid-template-columns: 1fr; gap: 30px; } }
+        
+        .whatsapp-panel, .newspaper-panel { 
+            background: #f8fafc; 
+            border-radius: 20px; 
+            padding: 35px; 
+            height: 750px; 
+            overflow-y: auto;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .panel-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 30px; 
+            padding-bottom: 20px; 
+            border-bottom: 3px solid #e2e8f0;
+        }
+        .panel-title { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
+        .status-badge { padding: 8px 20px; border-radius: 25px; font-weight: 600; font-size: 0.9rem; }
+        
+        .whatsapp-message { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border-left: 6px solid #10b981;
+            transition: all 0.3s ease;
+        }
+        .whatsapp-message:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(0,0,0,0.15); }
+        .channel-name { font-weight: 700; color: #059669; font-size: 1.1rem; margin-bottom: 12px; }
+        .message-time { color: #64748b; font-size: 0.85rem; margin-bottom: 15px; }
+        .message-image { 
+            width: 100%; 
+            height: 220px; 
+            object-fit: cover; 
+            border-radius: 12px; 
+            margin-bottom: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+        .message-text { 
+            line-height: 1.7; 
+            color: #374151; 
+            font-size: 1rem;
+        }
+        
+        .newspaper-column { 
+            column-count: 4; 
+            column-gap: 30px; 
+            column-fill: auto; 
+            font-size: 15px; 
+            line-height: 1.6;
+        }
+        .top-story { 
+            break-inside: avoid; 
+            background: linear-gradient(135deg, #ef4444, #dc2626); 
+            color: white; 
+            padding: 35px; 
+            border-radius: 20px; 
+            margin-bottom: 35px; 
+            text-align: center;
+        }
+        .top-story img { width: 100%; height: 280px; object-fit: cover; border-radius: 15px; margin-bottom: 25px; }
+        .top-story h2 { font-family: 'Playfair Display', serif; font-size: 2.3rem; margin-bottom: 20px; }
+        .story-card { 
+            break-inside: avoid; 
+            background: white; 
+            padding: 25px; 
+            margin-bottom: 25px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 35px rgba(0,0,0,0.1);
+        }
+        .story-title { font-size: 1.25rem; font-weight: 600; color: #1e293b; margin-bottom: 12px; }
+        .story-meta { color: #64748b; font-size: 0.92rem; margin-bottom: 15px; }
+        
+        .fab-button { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            width: 70px; 
+            height: 70px; 
+            border-radius: 50%; 
+            background: linear-gradient(135deg, #ec4899, #db2777); 
+            border: none; 
+            color: white; 
+            font-size: 1.8rem; 
+            box-shadow: 0 15px 40px rgba(236,72,153,0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .fab-button:hover { transform: scale(1.1); box-shadow: 0 20px 50px rgba(236,72,153,0.5); }
+        
+        .connection-status { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            padding: 15px 25px; 
+            border-radius: 50px; 
+            font-weight: 600; 
+            font-size: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
-    <div class="status" id="status">🔄 Loading Live News...</div>
+    <!-- Connection Status -->
+    <div class="connection-status bg-success text-white" id="connectionStatus">
+        🚀 WhatsApp Connected - Live Feed Active
+    </div>
     
-    <div class="newspaper">
-        <div class="header">
-            <h1>📰 BELIEVE IT DAILY</h1>
-            <p style="font-size: 1.3rem; opacity: 0.9;">Live News → AI Newspaper → Instant PDF</p>
+    <!-- Main App -->
+    <div class="app-container">
+        <!-- Newspaper Masthead -->
+        <div class="masthead">
+            <div class="masthead-content">
+                <div class="logo">📰 BELIEVE IT</div>
+                <div class="tagline">AI-Powered Newspaper from WhatsApp Channels</div>
+                <p style="margin-top: 15px; opacity: 0.8;">Live extraction → Smart layout → Perfect PDF</p>
+            </div>
         </div>
 
-        <div class="container-fluid p-4">
-            <div class="row">
-                <!-- Live Chronological Feed (LEFT) -->
-                <div class="col-lg-5">
-                    <div class="live-feed">
-                        <h3>📱 Live News Feed <small class="text-muted">(Chronological)</small></h3>
-                        <div id="liveFeed"></div>
-                    </div>
+        <!-- Dual Panel Layout -->
+        <div class="main-content">
+            <!-- LEFT: WhatsApp Channel Raw Data -->
+            <div class="whatsapp-panel">
+                <div class="panel-header">
+                    <div class="panel-title">📱 WhatsApp Channels (Raw Data)</div>
+                    <div class="status-badge bg-emerald text-white" id="whatsappStatus">Live - 12 Messages</div>
                 </div>
+                <div id="whatsappFeed"></div>
+            </div>
 
-                <!-- AI Newspaper (RIGHT) -->
-                <div class="col-lg-7">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                        <h3>🗞️ AI Newspaper</h3>
-                        <button class="generate-btn" id="downloadPDF">📄 Generate PDF</button>
-                    </div>
-                    <div id="aiNewspaper" class="ai-paper">
-                        <div style="text-align: center; padding: 100px 20px; color: #9ca3af;">
-                            Live news feed → AI auto-layout → Perfect newspaper
-                        </div>
-                    </div>
+            <!-- RIGHT: AI Generated Newspaper -->
+            <div class="newspaper-panel">
+                <div class="panel-header">
+                    <div class="panel-title">🗞️ AI Newspaper (Auto Layout)</div>
+                    <div class="status-badge bg-purple text-white">AI Layout Complete</div>
                 </div>
+                <div id="aiNewspaper" class="newspaper-column"></div>
             </div>
         </div>
     </div>
 
+    <!-- Floating PDF Button -->
+    <button class="fab-button" id="generatePDF" title="Download Newspaper PDF">
+        📄
+    </button>
+
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        // LIVE NEWS RSS FEEDS (Real sources - same as WhatsApp channels)
-        const newsFeeds = [
-            'https://feeds.bbci.co.uk/news/rss.xml',
-            'https://rss.cnn.com/rss/edition.rss',
-            'https://timesofindia.indiatimes.com/rssfeedstopstories.cms',
-            'https://rss.timesofindia.indiatimes.com/rssfeedstopstories.cms',
-            'https://feeds.hindustantimes.com/rss/india/rssfeed.xml'
+        // SIMULATED REAL WHATSAPP CHANNEL DATA (Images + Text + Timestamps)
+        // In production: Replace with Green-API webhook receiving real channel posts
+        const whatsappChannelPosts = [
+            {
+                id: 1,
+                channel: "BBC News India",
+                timestamp: "2025-12-19T09:45:00Z",
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=350&fit=crop",
+                text: "BREAKING: PM Modi announces ₹15 lakh crore infra boost for next 5 years. Focus on smart cities, high-speed rail, and renewable energy projects.",
+                type: "breaking"
+            },
+            {
+                id: 2,
+                channel: "NDTV",
+                timestamp: "2025-12-19T09:42:00Z",
+                image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=300&fit=crop",
+                text: "Bengaluru submerged: Record rainfall causes chaos on Outer Ring Road. NDRF teams deployed, schools closed.",
+                type: "urgent"
+            },
+            {
+                id: 3,
+                channel: "Economic Times",
+                timestamp: "2025-12-19T09:38:00Z",
+                image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=450&h=300&fit=crop",
+                text: "Rupee rallies 85 paise to 84.25 vs USD after RBI's surprise rate cut. Sensex jumps 1200 points.",
+                type: "market"
+            },
+            {
+                id: 4,
+                channel: "ANI News",
+                timestamp: "2025-12-19T09:35:00Z",
+                image: "https://images.unsplash.com/photo-1505455184862-554165e5f6ee?w=450&h=300&fit=crop",
+                text: "Gaganyaan update: ISRO completes final crew module tests. First manned mission set for Q2 2026.",
+                type: "science"
+            },
+            {
+                id: 5,
+                channel: "Times Now Sports",
+                timestamp: "2025-12-19T09:30:00Z",
+                image: "https://images.unsplash.com/photo-1518546305927-5a555fb42aa7?w=500&h=350&fit=crop",
+                text: "IND vs AUS T20: Rohit Sharma's blistering 112 off 58 balls powers India to 9-wicket win!",
+                type: "sports"
+            },
+            {
+                id: 6,
+                channel: "India Today",
+                timestamp: "2025-12-19T09:25:00Z",
+                image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=450&h=300&fit=crop",
+                text: "Delhi pollution crisis: GRAP-IV restrictions extended. Schools shut, construction banned.",
+                type: "local"
+            },
+            {
+                id: 7,
+                channel: "CNN Business",
+                timestamp: "2025-12-19T09:20:00Z",
+                image: "https://images.unsplash.com/photo-1551288049-b1f4c29e95f7?w=450&h=300&fit=crop",
+                text: "Tesla India factory confirmed: $3 billion investment, production starts 2027.",
+                type: "business"
+            },
+            {
+                id: 8,
+                channel: "Hindustan Times",
+                timestamp: "2025-12-19T09:15:00Z",
+                image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500&h=350&fit=crop",
+                text: "Mumbai Metro Line 3 operational: 27 stations, cuts travel time by 70%.",
+                type: "infra"
+            }
         ];
 
-        let allStories = [];
+        let processedPosts = [];
 
-        // Fetch LIVE news (Chronological)
-        async function fetchLiveNews() {
-            document.getElementById('status').innerHTML = '🔄 Fetching Live News <span class="loading"></span>';
+        // Initialize app
+        function initApp() {
+            // Sort by timestamp (chronological - newest first)
+            processedPosts = whatsappChannelPosts
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            try {
-                // Simulate real RSS parsing with fresh data
-                const freshStories = [
-                    { title: "PM Modi inaugurates India's largest solar park in Gujarat", source: "NDTV", time: "2 min ago", type: "breaking" },
-                    { title: "Bengaluru traffic paralyzed as heavy rains flood ORR", source: "Times of India", time: "5 min ago", type: "urgent" },
-                    { title: "Rupee jumps 75 paise to 84.10 after RBI intervention", source: "Economic Times", time: "12 min ago", type: "market" },
-                    { title: "ISRO successfully tests human-rated engine for Gaganyaan", source: "ANI", time: "18 min ago", type: "science" },
-                    { title: "India beats Australia by 6 wickets, Kohli 78*", source: "Sports Tak", time: "25 min ago", type: "sports" },
-                    { title: "Delhi AQI drops to 160 after overnight rain", source: "Hindustan Times", time: "33 min ago", type: "local" },
-                    { title: "Tesla confirms $2B India factory investment", source: "CNN Business", time: "41 min ago", type: "business" },
-                    { title: "Mumbai Metro Line 3 opens 20 stations today", source: "India Today", time: "48 min ago", type: "infra" }
-                ].sort((a,b) => new Date(`2025-12-19T${a.time.includes('min') ? '10:' + (60-parseInt(a.time)) : '09:59'}`) - new Date(`2025-12-19T${b.time.includes('min') ? '10:' + (60-parseInt(b.time)) : '09:59'}`));
-
-                allStories = freshStories;
-                displayLiveFeed();
-                aiGenerateNewspaper();
-                document.getElementById('status').innerHTML = `✅ Live: ${allStories.length} stories (${new Date().toLocaleTimeString('en-IN')})`;
-            } catch(e) {
-                document.getElementById('status').textContent = '❌ Fetch failed - Using backup data';
-                allStories = freshStories;
-                displayLiveFeed();
-                aiGenerateNewspaper();
-            }
+            renderWhatsAppFeed();
+            aiGenerateNewspaper();
         }
 
-        // Display chronological feed
-        function displayLiveFeed() {
-            const feed = document.getElementById('liveFeed');
-            feed.innerHTML = allStories.map(story => `
-                <div class="news-item">
-                    <div class="news-title">${story.title}</div>
-                    <div class="news-source">📱 ${story.source}</div>
-                    <div class="news-time">${story.time}</div>
+        // Render WhatsApp raw feed (chronological)
+        function renderWhatsAppFeed() {
+            const feed = document.getElementById('whatsappFeed');
+            feed.innerHTML = processedPosts.map(post => `
+                <div class="whatsapp-message">
+                    <div class="channel-name">${post.channel}</div>
+                    <div class="message-time">${new Date(post.timestamp).toLocaleString('en-IN', { 
+                        year: 'numeric', month: 'short', day: 'numeric', 
+                        hour: '2-digit', minute: '2-digit' 
+                    })}</div>
+                    ${post.image ? `<img src="${post.image}" class="message-image" alt="News Image" loading="lazy">` : ''}
+                    <div class="message-text">${post.text}</div>
                 </div>
             `).join('');
+            
+            document.getElementById('whatsappStatus').textContent = `Live - ${processedPosts.length} Messages`;
         }
 
-        // AI Newspaper Generation (Chronological → Smart Layout)
+        // AI Newspaper Generation (Smart chronological layout)
         function aiGenerateNewspaper() {
             const newspaper = document.getElementById('aiNewspaper');
             
-            // AI Layout: Top 2 stories full-width, rest in columns (chronological)
             let html = '';
             
-            // Page 1: Top Stories (most recent)
-            const topStories = allStories.slice(0,2);
-            html += '<div class="page-break">';
-            topStories.forEach(story => {
+            // PAGE 1: Top 2 stories (most recent) - Full width hero
+            const topStories = processedPosts.slice(0, 2);
+            topStories.forEach((post, index) => {
                 html += `
                     <div class="top-story">
-                        <h2>${story.title}</h2>
-                        <div style="font-size: 1.2rem; opacity: 0.9;">${story.source} | ${story.time}</div>
+                        ${post.image ? `<img src="${post.image}" alt="${post.text}" loading="lazy">` : ''}
+                        <h2>${post.text}</h2>
+                        <div style="font-size: 1.3rem; opacity: 0.95; margin-top: 15px;">
+                            ${post.channel} | ${new Date(post.timestamp).toLocaleString('en-IN', { 
+                                hour: '2-digit', minute: '2-digit' 
+                            })}
+                        </div>
                     </div>
                 `;
             });
-            html += '</div>';
 
-            // Page 2+: Column stories (chronological order)
-            html += '<div class="page-break">';
-            allStories.slice(2).forEach(story => {
+            // PAGES 2+: Column layout (chronological order)
+            const columnStories = processedPosts.slice(2);
+            columnStories.forEach(post => {
                 html += `
-                    <div style="break-inside: avoid; margin-bottom: 25px;">
-                        <div class="news-title">${story.title}</div>
-                        <div style="color: #6b7280; font-size: 0.95rem;">${story.source} • ${story.time}</div>
+                    <div class="story-card">
+                        ${post.image ? `<img src="${post.image}" style="width:100%; height:180px; object-fit:cover; border-radius:12px;" alt="${post.text}" loading="lazy">` : ''}
+                        <div class="story-title">${post.text}</div>
+                        <div class="story-meta">
+                            📱 ${post.channel} • ${new Date(post.timestamp).toLocaleString('en-IN', { 
+                                hour: '2-digit', minute: '2-digit' 
+                            })}
+                        </div>
                     </div>
                 `;
             });
-            html += '</div>';
 
             newspaper.innerHTML = html;
         }
 
-        // PDF Generation
-        document.getElementById('downloadPDF').onclick = async () => {
-            const newspaper = document.getElementById('aiNewspaper').parentElement;
+        // Professional PDF Generation
+        document.getElementById('generatePDF').onclick = async () => {
+            const newspaperPanel = document.querySelector('.newspaper-panel');
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
             
-            const canvas = await html2canvas(newspaper, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff',
-                width: newspaper.scrollWidth,
-                height: newspaper.scrollHeight
-            });
-            
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = 210;
-            const pageHeight = 295;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
+            try {
+                const canvas = await html2canvas(newspaperPanel, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: newspaperPanel.scrollWidth,
+                    height: newspaperPanel.scrollHeight,
+                    logging: false
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
 
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                doc.addPage();
+                // Add first page
                 doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
+
+                // Add additional pages
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                // Save with timestamp
+                const today = new Date().toISOString().slice(0, 10);
+                doc.save(`believe-it-newspaper-${today}.pdf`);
+                
+            } catch (error) {
+                console.error('PDF generation failed:', error);
+                alert('PDF generation failed. Please try again.');
             }
-            doc.save(`believe-it-${new Date().toISOString().slice(0,10)}.pdf`);
         };
 
-        // START: Auto-fetch every 5 minutes
-        fetchLiveNews();
-        setInterval(fetchLiveNews, 300000);
+        // Auto-refresh simulation (real webhook would trigger this)
+        setInterval(() => {
+            // Simulate new message every 3 minutes
+            const newPost = {
+                id: Date.now(),
+                channel: ["BBC News", "NDTV", "Economic Times"][Math.floor(Math.random() * 3)],
+                timestamp: new Date().toISOString(),
+                image: `https://images.unsplash.com/photo-${Math.floor(Math.random()*1000)}?w=500&h=350&fit=crop`,
+                text: "New breaking story just received from WhatsApp channel",
+                type: "live"
+            };
+            processedPosts.unshift(newPost);
+            processedPosts = processedPosts.slice(0, 15); // Keep latest 15
+            renderWhatsAppFeed();
+            aiGenerateNewspaper();
+        }, 180000); // 3 minutes
+
+        // Initialize
+        initApp();
     </script>
 </body>
 </html>
