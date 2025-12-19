@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Believe It Newspaper Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .newspaper-column { column-count: 3; column-gap: 20px; }
+        .content-box { border: 1px solid #ccc; padding: 10px; margin: 10px 0; resize: both; overflow: auto; min-height: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1>Believe It Newspaper Generator</h1>
+        
+        <section id="raw-data" class="mb-5">
+            <h2>1. Raw Data from WhatsApp</h2>
+            <div id="rawContent" class="content-box newspaper-column">
+                Sample news will load here...
+            </div>
+        </section>
+        
+        <section id="page-orders" class="mb-5">
+            <h2>2. Page Orders</h2>
+            <ul id="pageList" class="list-group">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Page 1 - Front Page
+                    <div>
+                        <button class="btn btn-sm btn-primary">↑ Up</button>
+                        <button class="btn btn-sm btn-secondary">↓ Down</button>
+                        <button class="btn btn-sm btn-danger">Delete</button>
+                    </div>
+                </li>
+            </ul>
+            <button id="addPage" class="btn btn-success mt-2">+ Add Page</button>
+        </section>
+        
+        <section id="content-sizing">
+            <h2>3. Content Sizing & Preview</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <label>Page Size:</label>
+                    <select id="pageSize" class="form-select">
+                        <option>A4</option>
+                        <option>Tabloid</option>
+                        <option>Broadsheet</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>Columns:</label>
+                    <input type="number" id="columns" min="1" max="5" value="3" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <button id="generatePDF" class="btn btn-success mt-3 w-100">📄 Generate PDF</button>
+                </div>
+            </div>
+            <div id="preview" class="content-box mt-3 newspaper-column p-4">
+                Drag content here for preview...
+            </div>
+        </section>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Add page functionality
+        document.getElementById('addPage').onclick = () => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            li.innerHTML = `Page ${document.querySelectorAll('#pageList li').length + 1} <div><button class="btn btn-sm btn-primary">↑ Up</button><button class="btn btn-sm btn-secondary">↓ Down</button><button class="btn btn-sm btn-danger">Delete</button></div>`;
+            document.getElementById('pageList').appendChild(li);
+        };
+
+        // Column preview update
+        document.getElementById('columns').onchange = () => {
+            const cols = document.getElementById('columns').value;
+            document.getElementById('preview').style.columnCount = cols;
+        };
+
+        // PDF Export
+        document.getElementById('generatePDF').onclick = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.html(document.getElementById('preview'), {
+                callback: function (doc) {
+                    doc.save('believe-it-newspaper.pdf');
+                },
+                x: 10, y: 10, width: 190, windowWidth: 800
+            });
+        };
+    </script>
+</body>
+</html>
+
+3. Press Ctrl+S to save
+4. Close Notepad
+5. Double-click index.html - webpage opens in browser
