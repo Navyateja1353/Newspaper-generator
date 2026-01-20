@@ -2,58 +2,42 @@
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>జనం న్యూస్ – ZIP Newspaper Generator</title>
+<title>జనం న్యూస్</title>
 
 <!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-<!-- Bootstrap -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap');
-
 body {
     background: #e5e7eb;
     font-family: 'Noto Sans Telugu', sans-serif;
 }
 
-/* Upload UI */
 .app {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: auto;
-}
-
-.header {
-    background: #b91c1c;
-    color: white;
-    padding: 40px;
-    text-align: center;
-    border-radius: 15px;
+    padding: 20px;
 }
 
 .drop-zone {
-    border: 4px dashed #2563eb;
     background: white;
-    padding: 50px;
+    border: 3px dashed #2563eb;
+    padding: 40px;
     text-align: center;
-    margin: 40px 0;
     border-radius: 15px;
     cursor: pointer;
+    margin-bottom: 30px;
 }
 
-/* Newspaper Layout */
+/* NEWSPAPER */
 .newspaper {
     width: 210mm;
     min-height: 297mm;
-    margin: auto;
     background: white;
+    margin: auto;
     padding: 20mm;
-    box-shadow: 0 0 25px rgba(0,0,0,0.25);
 }
 
 /* Masthead */
@@ -65,32 +49,26 @@ body {
 
 .masthead h1 {
     font-size: 3rem;
-    font-weight: 700;
     margin: 0;
 }
 
-.masthead p {
-    font-size: 1rem;
-    margin: 5px 0 15px;
-}
-
-/* Lead Story */
-.lead-story h2 {
+/* Lead Article */
+.lead h2 {
     font-size: 2rem;
-    font-weight: 700;
+    margin-bottom: 10px;
 }
 
-.lead-story img {
+.lead img {
     width: 100%;
-    height: 280px;
+    height: 260px;
     object-fit: cover;
     margin: 15px 0;
 }
 
-.lead-story p {
-    font-size: 1.1rem;
-    line-height: 1.8;
-    text-align: justify;
+.meta {
+    font-size: 0.8rem;
+    color: #555;
+    margin-bottom: 15px;
 }
 
 /* Columns */
@@ -99,38 +77,20 @@ body {
     column-gap: 20px;
 }
 
-.story {
+.article {
     break-inside: avoid;
-    margin-bottom: 20px;
 }
 
-.story h3 {
-    font-size: 1.2rem;
-    font-weight: 700;
-}
-
-.story img {
-    width: 100%;
-    height: 180px;
-    object-fit: cover;
-    margin: 10px 0;
-}
-
-.story p {
+.article p {
     text-align: justify;
-    line-height: 1.7;
-    font-size: 0.95rem;
-}
-
-.time {
-    font-size: 0.75rem;
-    color: #555;
+    line-height: 1.8;
+    font-size: 1rem;
 }
 
 /* Print */
 @media print {
     body { background: none; }
-    .newspaper { box-shadow: none; }
+    .drop-zone { display: none; }
 }
 </style>
 </head>
@@ -138,121 +98,99 @@ body {
 <body>
 <div class="app">
 
-    <div class="header">
-        <h1>📰 జనం న్యూస్</h1>
-        <p>ZIP → Telugu Newspaper Generator</p>
-    </div>
+<div class="drop-zone" id="dropZone">
+    <h3>📦 ZIP File Drop చేయండి</h3>
+    <p>chat.txt + images (.jpg/.png)</p>
+    <input type="file" id="zipInput" accept=".zip" hidden>
+    <button onclick="zipInput.click()">ZIP Select</button>
+</div>
 
-    <div class="drop-zone" id="dropZone">
-        <h3>📦 ZIP File ఇక్కడ Drop చేయండి</h3>
-        <p>chat.txt + images (.jpg/.png)</p>
-        <input type="file" id="zipInput" accept=".zip" hidden>
-        <button class="btn btn-primary mt-3" onclick="zipInput.click()">ZIP Select</button>
-    </div>
+<div id="newspaper" class="newspaper"></div>
 
-    <div class="text-center mb-4">
-        <button class="btn btn-danger btn-lg" id="printBtn" style="display:none">🖨️ PDF PRINT</button>
-    </div>
-
-    <div id="newspaperPreview" class="newspaper"></div>
 </div>
 
 <script>
-let extractedStories = [];
 let imageMap = {};
+let stories = [];
 
-const dropZone = document.getElementById('dropZone');
-const zipInput = document.getElementById('zipInput');
+dropZone.ondrop = e => {
+    e.preventDefault();
+    loadZip(e.dataTransfer.files[0]);
+};
+dropZone.ondragover = e => e.preventDefault();
+zipInput.onchange = e => loadZip(e.target.files[0]);
 
-['dragenter','dragover','dragleave','drop'].forEach(e=>{
-    dropZone.addEventListener(e, ev=>{ev.preventDefault();ev.stopPropagation();});
-});
-dropZone.addEventListener('drop', e => processZip(e.dataTransfer.files[0]));
-zipInput.addEventListener('change', e => processZip(e.target.files[0]));
-
-async function processZip(zipFile) {
+async function loadZip(zipFile) {
     const zip = await JSZip.loadAsync(zipFile);
     imageMap = {};
 
-    for (const f in zip.files) {
-        if (f.match(/\.(jpg|jpeg|png)$/i)) {
+    for (let f in zip.files) {
+        if (f.match(/\.(jpg|png|jpeg)$/i)) {
             const blob = await zip.file(f).async("blob");
             imageMap[f] = URL.createObjectURL(blob);
         }
     }
 
-    const chatFile = Object.keys(zip.files).find(f=>f.toLowerCase().includes("txt"));
-    const text = await zip.file(chatFile).async("text");
+    const txt = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const content = await zip.file(txt).async("text");
 
-    extractedStories = parseChat(text);
-    generateNewspaper();
-    document.getElementById("printBtn").style.display = "inline-block";
+    stories = parseStories(content);
+    renderNewspaper();
 }
 
-function parseChat(content) {
-    const lines = content.split("\n");
-    let stories = [];
-    let cur = {sender:"", text:"", images:[], timestamp:""};
+function parseStories(text) {
+    const lines = text.split("\n");
+    let result = [];
+    let current = { text: "", images: [], time: "" };
 
-    lines.forEach(line=>{
-        const m = line.match(/\[(.*?)\]\s*~\s*(.*?):\s*(.*)/);
+    lines.forEach(l => {
+        const m = l.match(/\[(.*?)\]\s*~.*?:\s*(.*)/);
         if (!m) return;
 
-        if (m[3].match(/🔚|END/i)) {
-            stories.push(cur);
-            cur = {sender:"", text:"", images:[], timestamp:""};
+        if (m[2].match(/🔚|END/i)) {
+            if (current.text) result.push(current);
+            current = { text: "", images: [], time: "" };
         } else {
-            if (!cur.sender) cur.sender = m[2];
-            cur.timestamp = m[1];
-            const img = m[3].match(/<attached:\s*(.*?\.(jpg|png))/i);
-            if (img && imageMap[img[1]]) cur.images.push(imageMap[img[1]]);
-            cur.text += m[3] + " ";
+            current.time = m[1];
+            const img = m[2].match(/<attached:\s*(.*?\.(jpg|png))/i);
+            if (img && imageMap[img[1]]) current.images.push(imageMap[img[1]]);
+            current.text += m[2] + " ";
         }
     });
-    return stories.sort((a,b)=>b.text.length-a.text.length);
+    return result;
 }
 
-function generateNewspaper() {
-    const top = extractedStories[0];
-    let html = `
+/* AUTO TITLE GENERATION */
+function generateTitle(text) {
+    return text.split(" ").slice(0, 10).join(" ") + "...";
+}
+
+function renderNewspaper() {
+    if (!stories.length) return;
+
+    const top = stories[0];
+    const title = generateTitle(top.text);
+
+    document.getElementById("newspaper").innerHTML = `
         <div class="masthead">
             <h1>జనం న్యూస్</h1>
             <p>${new Date().toLocaleDateString('te-IN')}</p>
         </div>
 
-        <div class="lead-story">
-            <h2>${top.sender}</h2>
-            ${top.images[0]?`<img src="${top.images[0]}">`:""}
-            <p>${top.text}</p>
+        <div class="lead">
+            <h2>${title}</h2>
+            <div class="meta">📅 ${top.time}</div>
+            ${top.images[0] ? `<img src="${top.images[0]}">` : ""}
         </div>
 
         <div class="columns">
-    `;
-
-    extractedStories.slice(1).forEach(s=>{
-        html+=`
-            <div class="story">
-                <h3>${s.sender}</h3>
-                ${s.images[0]?`<img src="${s.images[0]}">`:""}
-                <p>${s.text}</p>
-                <div class="time">${s.timestamp}</div>
+            <div class="article">
+                <p>${top.text}</p>
             </div>
-        `;
-    });
-
-    html+="</div>";
-    document.getElementById("newspaperPreview").innerHTML = html;
+        </div>
+    `;
 }
-
-document.getElementById("printBtn").onclick = async ()=>{
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF("p","mm","a4");
-
-    const canvas = await html2canvas(document.getElementById("newspaperPreview"),{scale:2});
-    const img = canvas.toDataURL("image/png");
-    doc.addImage(img,"PNG",0,0,210,297);
-    doc.save("janam-news.pdf");
-};
 </script>
+
 </body>
 </html>
