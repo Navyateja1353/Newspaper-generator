@@ -4,9 +4,7 @@
 <meta charset="UTF-8">
 <title>జనం న్యూస్</title>
 
-<!-- Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -31,7 +29,6 @@ body {
     margin-bottom: 30px;
 }
 
-/* NEWSPAPER */
 .newspaper {
     width: 210mm;
     min-height: 297mm;
@@ -52,33 +49,33 @@ body {
     margin: 0;
 }
 
-/* Lead Article */
-.lead h2 {
-    font-size: 2rem;
-    margin-bottom: 10px;
+/* Article */
+.article {
+    break-inside: avoid;
+    margin-bottom: 30px;
 }
 
-.lead img {
+.article h2 {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.article img {
     width: 100%;
-    height: 260px;
+    height: 220px;
     object-fit: cover;
-    margin: 15px 0;
+    margin: 10px 0;
 }
 
 .meta {
     font-size: 0.8rem;
     color: #555;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 
-/* Columns */
 .columns {
     column-count: 3;
     column-gap: 20px;
-}
-
-.article {
-    break-inside: avoid;
 }
 
 .article p {
@@ -87,7 +84,6 @@ body {
     font-size: 1rem;
 }
 
-/* Print */
 @media print {
     body { background: none; }
     .drop-zone { display: none; }
@@ -100,7 +96,7 @@ body {
 
 <div class="drop-zone" id="dropZone">
     <h3>📦 ZIP File Drop చేయండి</h3>
-    <p>chat.txt + images (.jpg/.png)</p>
+    <p>chat.txt + images (.jpg / .png)</p>
     <input type="file" id="zipInput" accept=".zip" hidden>
     <button onclick="zipInput.click()">ZIP Select</button>
 </div>
@@ -125,17 +121,25 @@ async function loadZip(zipFile) {
     imageMap = {};
 
     for (let f in zip.files) {
-        if (f.match(/\.(jpg|png|jpeg)$/i)) {
+        if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
             imageMap[f] = URL.createObjectURL(blob);
         }
     }
 
-    const txt = Object.keys(zip.files).find(f => f.endsWith(".txt"));
-    const content = await zip.file(txt).async("text");
+    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const content = await zip.file(txtFile).async("text");
 
     stories = parseStories(content);
     renderNewspaper();
+}
+
+/* REMOVE DELETED & SYSTEM MESSAGES */
+function isMeaningful(text) {
+    if (!text) return false;
+    if (text.includes("This message was deleted")) return false;
+    if (text.trim().length < 10) return false;
+    return true;
 }
 
 function parseStories(text) {
@@ -143,52 +147,61 @@ function parseStories(text) {
     let result = [];
     let current = { text: "", images: [], time: "" };
 
-    lines.forEach(l => {
-        const m = l.match(/\[(.*?)\]\s*~.*?:\s*(.*)/);
-        if (!m) return;
+    lines.forEach(line => {
+        const match = line.match(/\[(.*?)\]\s*~.*?:\s*(.*)/);
+        if (!match) return;
 
-        if (m[2].match(/🔚|END/i)) {
-            if (current.text) result.push(current);
+        let msg = match[2].trim();
+
+        if (msg.match(/🔚|END/i)) {
+            if (isMeaningful(current.text)) result.push(current);
             current = { text: "", images: [], time: "" };
+            return;
+        }
+
+        if (!isMeaningful(msg)) return;
+
+        current.time = match[1];
+
+        const img = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
+        if (img && imageMap[img[1]]) {
+            current.images.push(imageMap[img[1]]);
         } else {
-            current.time = m[1];
-            const img = m[2].match(/<attached:\s*(.*?\.(jpg|png))/i);
-            if (img && imageMap[img[1]]) current.images.push(imageMap[img[1]]);
-            current.text += m[2] + " ";
+            current.text += msg + " ";
         }
     });
+
+    if (isMeaningful(current.text)) result.push(current);
     return result;
 }
 
-/* AUTO TITLE GENERATION */
+/* AUTO TITLE */
 function generateTitle(text) {
-    return text.split(" ").slice(0, 10).join(" ") + "...";
+    return text.split(" ").slice(0, 12).join(" ") + "...";
 }
 
 function renderNewspaper() {
-    if (!stories.length) return;
-
-    const top = stories[0];
-    const title = generateTitle(top.text);
-
-    document.getElementById("newspaper").innerHTML = `
+    let html = `
         <div class="masthead">
             <h1>జనం న్యూస్</h1>
             <p>${new Date().toLocaleDateString('te-IN')}</p>
         </div>
-
-        <div class="lead">
-            <h2>${title}</h2>
-            <div class="meta">📅 ${top.time}</div>
-            ${top.images[0] ? `<img src="${top.images[0]}">` : ""}
-        </div>
-
         <div class="columns">
-            <div class="article">
-                <p>${top.text}</p>
-            </div>
-        </div>
     `;
+
+    stories.forEach(story => {
+        html += `
+            <div class="article">
+                <h2>${generateTitle(story.text)}</h2>
+                <div class="meta">📅 ${story.time}</div>
+                ${story.images[0] ? `<img src="${story.images[0]}">` : ""}
+                <p>${story.text}</p>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    document.getElementById("newspaper").innerHTML = html;
 }
 </script>
 
