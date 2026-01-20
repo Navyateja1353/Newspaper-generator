@@ -10,8 +10,13 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+@page {
+    size: A4;
+    margin: 0;
+}
+
 body {
-    background: #ccc;
+    background: #bfbfbf;
     font-family: 'Noto Sans Telugu', sans-serif;
 }
 
@@ -20,60 +25,61 @@ body {
     width: 210mm;
     height: 297mm;
     background: white;
-    margin: 10mm auto;
-    padding: 12mm;
+    margin: 8mm auto;
+    padding: 12mm 10mm;
     page-break-after: always;
-    overflow: hidden;
 }
 
 /* HEADER */
 .header {
     text-align: center;
     border-bottom: 3px solid black;
-    margin-bottom: 6mm;
+    padding-bottom: 4mm;
+    margin-bottom: 4mm;
 }
 
 .header h1 {
     font-size: 34px;
     font-weight: 700;
+    line-height: 1;
 }
 
 /* CONTENT */
 .columns {
-    column-count: 4;
-    column-gap: 10px;
-    height: calc(297mm - 40mm);
+    column-count: 3;
+    column-gap: 8mm;
+    column-fill: auto;
 }
 
 /* ARTICLE */
 .article {
     break-inside: avoid;
-    margin-bottom: 6px;
+    margin-bottom: 4mm;
 }
 
 .article h2 {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
-    margin-bottom: 2px;
+    margin-bottom: 2mm;
 }
 
 .article img {
     width: 100%;
-    height: 90px;
+    height: 85px;
     object-fit: cover;
-    margin: 3px 0;
+    margin: 2mm 0;
 }
 
 .article p {
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.45;
     text-align: justify;
 }
 
 /* UPLOAD */
 #upload {
     background: white;
-    padding: 15px;
+    padding: 12px;
     text-align: center;
     margin: 10px;
 }
@@ -97,7 +103,7 @@ body {
 <script>
 let imageMap = {};
 let articles = [];
-const MAX_PAGES = 8;   // CHANGE TO 10 IF NEEDED
+const MAX_PAGES = 8;   // change to 10 if required
 
 zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(e.target.files[0]);
@@ -117,11 +123,11 @@ zipInput.onchange = async e => {
     render();
 };
 
-/* FILTER IMPORTANT NEWS ONLY */
+/* IMPORTANT CONTENT FILTER */
 function isValid(text) {
     if (!text) return false;
     if (text.includes("This message was deleted")) return false;
-    if (text.length < 40) return false;
+    if (text.length < 50) return false;
     return true;
 }
 
@@ -161,14 +167,14 @@ function titleFrom(text) {
 }
 
 function render() {
-    let paper = document.getElementById("paper");
+    const paper = document.getElementById("paper");
     paper.innerHTML = "";
 
-    let perPage = Math.ceil(articles.length / MAX_PAGES);
+    const perPage = Math.ceil(articles.length / MAX_PAGES);
     let index = 0;
 
-    for (let p = 1; p <= MAX_PAGES; p++) {
-        let page = document.createElement("div");
+    for (let p = 1; p <= MAX_PAGES && index < articles.length; p++) {
+        const page = document.createElement("div");
         page.className = "page";
 
         page.innerHTML = `
@@ -179,21 +185,20 @@ function render() {
             <div class="columns"></div>
         `;
 
-        let col = page.querySelector(".columns");
+        const col = page.querySelector(".columns");
 
         for (let i = 0; i < perPage && index < articles.length; i++, index++) {
-            let a = articles[index];
+            const a = articles[index];
             col.innerHTML += `
                 <div class="article">
                     <h2>${titleFrom(a.text)}</h2>
                     ${a.image ? `<img src="${a.image}">` : ""}
-                    <p>${a.text.slice(0, 900)}</p>
+                    <p>${a.text.slice(0, 850)}</p>
                 </div>
             `;
         }
 
         paper.appendChild(page);
-        if (index >= articles.length) break;
     }
 }
 </script>
