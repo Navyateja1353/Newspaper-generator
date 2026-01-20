@@ -3,41 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Janam News - ZIP Newspaper Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <title>Janam News - ZIP Newspaper Generator (Updated 2026)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/4.0.0/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans Telugu', sans-serif; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
-        .app { max-width: 1400px; margin: 0 auto; background: white; border-radius: 25px; box-shadow: 0 25px 80px rgba(0,0,0,0.25); overflow: hidden; }
-        .header { background: linear-gradient(45deg, #dc2626, #b91c1c); color: white; padding: 50px; text-align: center; }
-        .header h1 { font-size: 3rem; font-weight: 700; }
-        .drop-zone { border: 5px dashed #3b82f6; border-radius: 20px; padding: 80px; text-align: center; margin: 50px 0; cursor: pointer; transition: all 0.3s; }
-        .drop-zone.dragover { border-color: #10b981; background: #ecfdf5; transform: scale(1.02); }
-        .dual-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 50px; }
-        @media (max-width: 992px) { .dual-panel { grid-template-columns: 1fr; } }
-        .panel { background: #f8fafc; border-radius: 20px; padding: 40px; height: 700px; overflow-y: auto; }
-        .story-item { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .story-sender { font-weight: 700; color: #1e40af; font-size: 1.2rem; }
-        .story-text { line-height: 1.8; margin: 15px 0; }
-        .story-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin: 15px 0; }
-        .end-marker { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; display: inline-block; }
-        .newspaper-preview { column-count: 3; column-gap: 30px; }
-        .page-hero { grid-column: 1 / -1; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 50px; border-radius: 20px; margin-bottom: 40px; text-align: center; }
-        .print-btn { background: linear-gradient(45deg, #ec4899, #db2777); border: none; color: white; padding: 20px 60px; font-size: 1.5rem; border-radius: 50px; font-weight: 700; }
+        body { 
+            font-family: 'Noto Sans Telugu', sans-serif; 
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
+            min-height: 100vh;
+        }
+        .app { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white; 
+            border-radius: 25px; 
+            box-shadow: 0 25px 80px rgba(0,0,0,0.25); 
+            overflow: hidden; 
+        }
+        .header { 
+            background: linear-gradient(45deg, #dc2626, #b91c1c, #ef4444); 
+            color: white; 
+            padding: 60px; 
+            text-align: center; 
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        .header h1 { 
+            font-size: 3.2rem; 
+            font-weight: 700; 
+            position: relative;
+            z-index: 1;
+        }
+        .drop-zone { 
+            border: 5px dashed #3b82f6; 
+            border-radius: 20px; 
+            padding: 80px; 
+            text-align: center; 
+            margin: 50px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+        }
+        .drop-zone.dragover { 
+            border-color: #10b981; 
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5); 
+            transform: scale(1.02); 
+            box-shadow: 0 20px 40px rgba(16,185,129,0.3);
+        }
+        .dual-panel { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 40px; 
+            padding: 50px; 
+        }
+        @media (max-width: 992px) { 
+            .dual-panel { grid-template-columns: 1fr; } 
+        }
+        .panel { 
+            background: linear-gradient(145deg, #f8fafc, #e2e8f0); 
+            border-radius: 20px; 
+            padding: 40px; 
+            height: 750px; 
+            overflow-y: auto; 
+            border: 1px solid rgba(255,255,255,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .story-item { 
+            background: white; 
+            border-radius: 15px; 
+            padding: 25px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            transition: all 0.3s ease;
+            border-left: 5px solid #3b82f6;
+        }
+        .story-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        .story-sender { 
+            font-weight: 700; 
+            color: #1e40af; 
+            font-size: 1.3rem; 
+            margin-bottom: 10px;
+        }
+        .story-text { 
+            line-height: 1.8; 
+            margin: 15px 0; 
+            color: #374151;
+        }
+        .story-image { 
+            width: 100%; 
+            height: 250px; 
+            object-fit: cover; 
+            border-radius: 12px; 
+            margin: 15px 0; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .end-marker { 
+            background: linear-gradient(45deg, #10b981, #059669); 
+            color: white; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            font-weight: 700; 
+            display: inline-block; 
+            box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+        }
+        .newspaper-preview { 
+            column-count: 3; 
+            column-gap: 30px; 
+            height: 650px;
+        }
+        .page-hero { 
+            grid-column: 1 / -1; 
+            background: linear-gradient(135deg, #ef4444, #dc2626, #b91c1c); 
+            color: white; 
+            padding: 50px; 
+            border-radius: 20px; 
+            margin-bottom: 40px; 
+            text-align: center; 
+            box-shadow: 0 20px 40px rgba(220,38,38,0.3);
+        }
+        .print-btn, .zip-btn { 
+            background: linear-gradient(45deg, #ec4899, #db2777, #be185d); 
+            border: none; 
+            color: white; 
+            padding: 20px 60px; 
+            font-size: 1.5rem; 
+            border-radius: 50px; 
+            font-weight: 700; 
+            box-shadow: 0 10px 30px rgba(236,72,153,0.4);
+            transition: all 0.3s ease;
+        }
+        .print-btn:hover, .zip-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(236,72,153,0.6);
+        }
+        .stats-bar {
+            background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @media print {
+            .dual-panel { grid-template-columns: 1fr !important; }
+            .panel:first-child { display: none; }
+        }
     </style>
 </head>
 <body>
     <div class="app">
         <div class="header">
-            <h1>📰 జనం న్యూస్ - ZIP నుండి NEWSPAPER</h1>
-            <p>మీ ZIP file upload → AI stories extract → Perfect Telugu newspaper!</p>
+            <h1>📰 జనం న్యూస్ - ZIP నుండి NEWSPAPER (Updated 2026)</h1>
+            <p class="lead">మీ ZIP file upload → AI stories extract → Perfect Telugu newspaper + ZIP Export!</p>
         </div>
 
         <div class="drop-zone p-5 m-5" id="dropZone">
             <h2>📦 ZIP File ఇక్కడ Drop చేయండి</h2>
             <p>chat.txt + images (.jpg files) → Auto newspaper generation</p>
+            <div id="loadingSpinner" style="display: none;">
+                <div class="loading"></div> Processing...
+            </div>
             <input type="file" id="zipInput" accept=".zip" style="display: none;">
             <button class="btn btn-primary btn-lg mt-4 px-5" onclick="document.getElementById('zipInput').click()">
                 ZIP File Select చేయండి
@@ -47,15 +205,21 @@
         <div class="dual-panel">
             <!-- LEFT: Extracted Stories -->
             <div class="panel">
-                <h3>📋 Extracted Stories ({0})</h3>
+                <h3>📋 Extracted Stories <span id="storyCount">({0})</span></h3>
+                <div class="stats-bar" id="statsBar" style="display: none;">
+                    Total: <span id="totalChars">0</span> chars | 
+                    <span id="totalImages">0</span> images | 
+                    <span id="totalStories">0</span> stories
+                </div>
                 <div id="storiesList"></div>
             </div>
 
             <!-- RIGHT: Newspaper Preview -->
             <div class="panel">
                 <h3>🗞️ AI Newspaper Layout</h3>
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
-                    <button class="print-btn" id="printBtn" style="display: none;">🖨️ PDF PRINT చేయండి</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                    <button class="print-btn me-3" id="printBtn" style="display: none;">🖨️ PDF PRINT చేయండి</button>
+                    <button class="zip-btn" id="zipBtn" style="display: none;">📦 ZIP EXPORT చేయండి</button>
                 </div>
                 <div id="newspaperPreview" class="newspaper-preview"></div>
             </div>
@@ -67,10 +231,12 @@
     <script>
         let extractedStories = [];
         let imageMap = {};
+        let originalZipImages = {};
 
-        // Drop zone
+        // Enhanced Drop zone functionality
         const dropZone = document.getElementById('dropZone');
         const zipInput = document.getElementById('zipInput');
+        const loadingSpinner = document.getElementById('loadingSpinner');
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, preventDefaults));
         ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, highlight));
@@ -85,15 +251,24 @@
 
         async function handleDrop(e) {
             const files = e.dataTransfer.files;
+            showLoading(true);
             await processZip(files[0]);
+            showLoading(false);
         }
 
         async function handleZip(e) {
+            showLoading(true);
             await processZip(e.target.files[0]);
+            showLoading(false);
+        }
+
+        function showLoading(show) {
+            loadingSpinner.style.display = show ? 'block' : 'none';
+            dropZone.classList.toggle('dragover', show);
         }
 
         async function processZip(zipFile) {
-            if (!zipFile.name.endsWith('.zip')) {
+            if (!zipFile?.name.endsWith('.zip')) {
                 alert('ZIP file మాత్రమే upload చేయండి');
                 return;
             }
@@ -101,19 +276,24 @@
             try {
                 const zip = await JSZip.loadAsync(zipFile);
                 imageMap = {};
+                originalZipImages = {};
 
-                // Extract images first
+                // Extract images first - store both original and preview URLs
                 for (const filename of Object.keys(zip.files)) {
                     if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
                         const blob = await zip.file(filename).async('blob');
-                        imageMap[filename] = URL.createObjectURL(blob);
+                        const previewUrl = URL.createObjectURL(blob);
+                        imageMap[filename] = previewUrl;
+                        originalZipImages[filename] = blob; // Keep original for ZIP export
                     }
                 }
 
-                // Find and parse chat.txt
-                const chatFile = Object.keys(zip.files).find(f => f.toLowerCase().includes('chat.txt') || f.toLowerCase().includes('txt'));
+                // Find and parse chat.txt (improved detection)
+                const chatFile = Object.keys(zip.files).find(f => 
+                    f.toLowerCase().match(/chat\.txt|messages\.txt|transcript\.txt|news\.txt/i)
+                );
                 if (!chatFile) {
-                    alert('chat.txt file ZIP లో లేదు');
+                    alert('chat.txt లేదా messages.txt file ZIP లో లేదు');
                     return;
                 }
 
@@ -121,9 +301,12 @@
                 extractedStories = parseJanamNewsChat(chatContent);
                 
                 renderStories();
+                updateStats();
                 generateNewspaper();
                 document.getElementById('printBtn').style.display = 'inline-block';
+                document.getElementById('zipBtn').style.display = 'inline-block';
             } catch (error) {
+                console.error('ZIP process error:', error);
                 alert('ZIP process error: ' + error.message);
             }
         }
@@ -137,25 +320,29 @@
                 line = line.trim();
                 if (!line) return;
 
-                // Parse: [DD/MM/YY, HH:MM:SS PM] ~ Name: Message
-                const match = line.match(/\[(\d{1,2}\/\d{1,2}\/\d{2}),\s*(\d{1,2}:\d{1,2}:\d{1,2}\s*(?:AM|PM))\]\s*~\s*([^:]+?):\s*(.*)/);
+                // Enhanced regex for various chat formats
+                const match = line.match(/\[?(\d{1,2}\/\d{1,2}\/\d{2,4})[,\s]+(\d{1,2}:\d{1,2}:\d{1,2}\s*(?:AM|PM|a\.m\.|p\.m\.)?)\]?\s*~\s*([^:]+?):\s*(.*)/i) ||
+                             line.match(/(\d{1,2}:\d{1,2}:\d{1,2})\s*-\s*([^:]+?):\s*(.*)/i);
+                
                 if (match) {
-                    const timestamp = `${match[1]}, ${match[2]}`;
-                    const sender = match[3].trim();
-                    let message = match[4].trim();
+                    const timestamp = match[1] ? `${match[1]}, ${match[2]}` : match[1];
+                    const sender = match[3] || match[2];
+                    let message = match[4] || match[3];
 
-                    // Check END markers: 🔚, End, 📩📩🔚
-                    if (message.match(/🔚|END|end|📩📩🔚/i)) {
-                        if (currentStory.text) {
+                    // Multiple END markers
+                    if (message.match(/🔚|END|end|📩📩🔚|STOP|FINISH|END\s+OF\s+STORY/i)) {
+                        if (currentStory.text.trim().length > 50) { // Minimum story length
                             currentStory.timestamp = timestamp;
                             stories.push(currentStory);
                         }
                         currentStory = { sender: '', text: '', images: [], timestamp: '' };
                     } else {
-                        if (currentStory.sender === '') currentStory.sender = sender;
+                        if (!currentStory.sender) currentStory.sender = sender;
                         
-                        // Detect images
-                        const imageMatch = message.match(/<attached:\s*([^>]+?\.(jpg|jpeg|png|gif))/i);
+                        // Enhanced image detection
+                        const imageMatch = message.match(/<attached:\s*([^>]+?\.(jpg|jpeg|png|gif))/i) ||
+                                         message.match(/image[:\s]*([^\s]+?\.(jpg|jpeg|png|gif))/i);
+                        
                         if (imageMatch) {
                             const imgName = imageMatch[1];
                             if (imageMap[imgName]) {
@@ -168,45 +355,82 @@
                 }
             });
 
-            // Sort by length/priority (longest first)
-            return stories.sort((a, b) => b.text.length - a.text.length);
+            // Sort by length/priority (longest first), filter empty stories
+            return stories
+                .filter(story => story.text.trim().length > 50)
+                .sort((a, b) => b.text.length - a.text.length)
+                .slice(0, 20); // Limit to top 20 stories
         }
 
         function renderStories() {
             const container = document.getElementById('storiesList');
+            document.getElementById('storyCount').textContent = `(${extractedStories.length})`;
+            
             container.innerHTML = extractedStories.map((story, index) => `
                 <div class="story-item">
                     <div class="story-sender">${index + 1}. ${story.sender}</div>
-                    <div class="story-text">${story.text.substring(0, 300)}${story.text.length > 300 ? '...' : ''}</div>
-                    ${story.images.map(img => `<img src="${img}" class="story-image" alt="Story image">`).join('')}
-                    <div class="end-marker">🔚 END</div>
-                    <small>${story.timestamp} | ${story.text.length} chars | ${story.images.length} images</small>
+                    <div class="story-text">${story.text.trim().substring(0, 350)}${story.text.length > 350 ? '...' : ''}</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        ${story.images.slice(0,3).map(img => `<img src="${img}" class="story-image" alt="Story image" style="flex: 1 1 45%;">`).join('')}
+                    </div>
+                    <div class="end-marker mt-3">🔚 STORY END</div>
+                    <small class="d-block mt-2 text-muted">
+                        ${story.timestamp} | ${story.text.length} chars | ${story.images.length} images
+                    </small>
                 </div>
             `).join('');
+        }
+
+        function updateStats() {
+            const statsBar = document.getElementById('statsBar');
+            if (extractedStories.length === 0) return;
+            
+            const totalChars = extractedStories.reduce((sum, story) => sum + story.text.length, 0);
+            const totalImages = extractedStories.reduce((sum, story) => sum + story.images.length, 0);
+            
+            document.getElementById('totalChars').textContent = totalChars.toLocaleString();
+            document.getElementById('totalImages').textContent = totalImages;
+            document.getElementById('totalStories').textContent = extractedStories.length;
+            statsBar.style.display = 'block';
         }
 
         function generateNewspaper() {
             const preview = document.getElementById('newspaperPreview');
             let html = '';
 
-            // PAGE 1: Top story (longest)
+            if (extractedStories.length === 0) {
+                html = '<div class="text-center p-5"><h4>ZIP file process చేయండి</h4></div>';
+                preview.innerHTML = html;
+                return;
+            }
+
+            // PAGE 1: Top story (longest) - Enhanced layout
             const topStory = extractedStories[0];
             html += `
                 <div class="page-hero">
-                    <h1>${topStory.sender}</h1>
-                    <div style="font-size: 1.4rem; margin: 30px 0;">${topStory.text.substring(0, 400)}...</div>
-                    ${topStory.images.slice(0,1).map(img => `<img src="${img}" style="width:100%; height:300px; object-fit:cover; border-radius:15px;">`).join('')}
+                    <h1 style="font-size: 2.5rem; margin-bottom: 20px;">${topStory.sender}</h1>
+                    <div style="font-size: 1.4rem; line-height: 1.6; margin: 30px 0; max-width: 800px; margin-left: auto; margin-right: auto;">
+                        ${topStory.text.substring(0, 500).trim()}...
+                    </div>
+                    ${topStory.images.slice(0,2).map((img, i) => `
+                        <img src="${img}" style="width:${i===0?'100%':'48%'};; height:${i===0?'350px':'250px'}; object-fit:cover; border-radius:15px; margin: 15px 1%; box-shadow: 0 15px 35px rgba(0,0,0,0.3);" alt="Top story">
+                    `).join('')}
+                    <div style="margin-top: 20px; font-size: 1.1rem; opacity: 0.9;">${topStory.timestamp}</div>
                 </div>
             `;
 
-            // Multiple stories per page
-            extractedStories.slice(1).forEach((story, index) => {
+            // Multiple stories per page - Improved grid layout
+            extractedStories.slice(1, 12).forEach((story, index) => {
                 html += `
-                    <div class="story-card" style="break-inside: avoid; margin-bottom: 30px;">
-                        <h3 style="color: #dc2626; margin-bottom: 15px;">${story.sender}</h3>
-                        <div style="line-height: 1.8;">${story.text.substring(0, 250)}...</div>
-                        ${story.images.slice(0,1).map(img => `<img src="${img}" style="width:100%; height:200px; object-fit:cover; border-radius:10px; margin-top:15px;">`).join('')}
-                        <div style="color: #666; font-size: 0.9rem; margin-top: 10px;">${story.timestamp}</div>
+                    <div class="story-card" style="break-inside: avoid; margin-bottom: 30px; page-break-inside: avoid;">
+                        <h4 style="color: #dc2626; margin-bottom: 15px; font-size: 1.3rem;">${story.sender}</h4>
+                        <div style="line-height: 1.8; color: #374151; font-size: 1rem;">${story.text.substring(0, 280).trim()}...</div>
+                        ${story.images.slice(0,1).map(img => `
+                            <img src="${img}" style="width:100%; height:220px; object-fit:cover; border-radius:12px; margin:15px 0; box-shadow: 0 10px 25px rgba(0,0,0,0.15);" alt="Story image">
+                        `).join('')}
+                        <div style="color: #6b7280; font-size: 0.9rem; margin-top: 12px; border-top: 1px solid #e5e7eb; padding-top: 8px;">
+                            ${story.timestamp} | ${story.images.length} photos
+                        </div>
                     </div>
                 `;
             });
@@ -214,37 +438,82 @@
             preview.innerHTML = html;
         }
 
-        // Print PDF
+        // Enhanced PDF Print
         document.getElementById('printBtn').onclick = async () => {
             const rightPanel = document.querySelector('.panel:last-child');
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            const canvas = await html2canvas(rightPanel, {
-                scale: 2.5,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff'
-            });
+            try {
+                const canvas = await html2canvas(rightPanel, {
+                    scale: 2.8,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: rightPanel.scrollWidth,
+                    height: rightPanel.scrollHeight
+                });
 
-            const imgData = canvas.toDataURL('image/png');
-            const imgWidth = 210;
-            const pageHeight = 295;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
 
-            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                doc.addPage();
                 doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
-            }
 
-            doc.save('janam-news-newspaper.pdf');
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                doc.save(`janam-news-${new Date().toISOString().slice(0,10)}.pdf`);
+            } catch (error) {
+                alert('PDF generation error: ' + error.message);
+            }
+        };
+
+        // NEW: ZIP Export Feature
+        document.getElementById('zipBtn').onclick = async () => {
+            try {
+                const zip = new JSZip();
+                
+                // Add newspaper PDF (generate first)
+                const rightPanel = document.querySelector('.panel:last-child');
+                const canvas = await html2canvas(rightPanel, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+                const imgData = canvas.toDataURL('image/png').split(',')[1];
+                zip.file('janam-news-newspaper.pdf', imgData, {base64: true});
+
+                // Add individual stories as text files
+                extractedStories.forEach((story, index) => {
+                    zip.file(`story-${index + 1}-${story.sender.replace(/[^a-zA-Z0-9]/g, '_')}.txt`, 
+                        `Sender: ${story.sender}\nTime: ${story.timestamp}\n\n${story.text.trim()}\n\n--- END OF STORY ---`
+                    );
+                });
+
+                // Add original images back
+                Object.entries(originalZipImages).forEach(([filename, blob]) => {
+                    zip.file(filename, blob);
+                });
+
+                // Generate and download
+                const content = await zip.generateAsync({type: "blob"});
+                saveAs(content, `janam-news-complete-${new Date().toISOString().slice(0,10)}.zip`);
+                
+                alert(`✅ ZIP Export complete! Contains PDF + ${extractedStories.length} stories + ${Object.keys(originalZipImages).length} images`);
+            } catch (error) {
+                console.error('ZIP export error:', error);
+                alert('ZIP export error: ' + error.message);
+            }
         };
     </script>
 </body>
