@@ -3,61 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Believe It - Smart Newspaper AI</title>
+    <title>Janam News - ZIP Newspaper Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: 'Georgia', serif; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .newspaper { max-width: 1200px; margin: 20px auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
-        .header { background: linear-gradient(90deg, #d32f2f, #f44336, #c62828); color: white; padding: 50px; text-align: center; }
-        .upload-zone { border: 4px dashed #1976d2; border-radius: 20px; padding: 60px; text-align: center; margin: 40px 0; background: rgba(255,255,255,0.9); transition: all 0.3s; cursor: pointer; }
-        .upload-zone:hover { border-color: #10b981; background: rgba(16,185,129,0.1); transform: scale(1.02); }
-        .ai-analysis { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; margin: 30px 0; }
-        .priority-badge { padding: 6px 16px; border-radius: 25px; font-weight: bold; font-size: 0.85rem; margin: 2px; }
-        .p1 { background: #ff4444; color: white; }
-        .p2 { background: #ff8800; color: white; }
-        .p3 { background: #44aa44; color: white; }
-        .newspaper-page { page-break-after: always; margin-bottom: 50px; padding-bottom: 40px; border-bottom: 3px solid #eee; }
-        .page1-hero { background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; padding: 50px; border-radius: 20px; margin-bottom: 40px; text-align: center; }
-        .page1-hero h1 { font-size: 2.8rem; font-weight: 700; margin-bottom: 25px; line-height: 1.2; }
-        .multi-story { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin: 30px 0; }
-        .story-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); transition: transform 0.3s; }
-        .story-card:hover { transform: translateY(-8px); }
-        .generate-btn { background: linear-gradient(45deg, #667eea, #764ba2); border: none; color: white; padding: 20px 50px; font-size: 1.4rem; font-weight: 700; border-radius: 50px; box-shadow: 0 10px 30px rgba(102,126,234,0.4); }
-        .generate-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 40px rgba(102,126,234,0.5); }
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans Telugu', sans-serif; background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
+        .app { max-width: 1400px; margin: 0 auto; background: white; border-radius: 25px; box-shadow: 0 25px 80px rgba(0,0,0,0.25); overflow: hidden; }
+        .header { background: linear-gradient(45deg, #dc2626, #b91c1c); color: white; padding: 50px; text-align: center; }
+        .header h1 { font-size: 3rem; font-weight: 700; }
+        .drop-zone { border: 5px dashed #3b82f6; border-radius: 20px; padding: 80px; text-align: center; margin: 50px 0; cursor: pointer; transition: all 0.3s; }
+        .drop-zone.dragover { border-color: #10b981; background: #ecfdf5; transform: scale(1.02); }
+        .dual-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: 50px; }
+        @media (max-width: 992px) { .dual-panel { grid-template-columns: 1fr; } }
+        .panel { background: #f8fafc; border-radius: 20px; padding: 40px; height: 700px; overflow-y: auto; }
+        .story-item { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .story-sender { font-weight: 700; color: #1e40af; font-size: 1.2rem; }
+        .story-text { line-height: 1.8; margin: 15px 0; }
+        .story-image { width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin: 15px 0; }
+        .end-marker { background: #10b981; color: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; display: inline-block; }
+        .newspaper-preview { column-count: 3; column-gap: 30px; }
+        .page-hero { grid-column: 1 / -1; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 50px; border-radius: 20px; margin-bottom: 40px; text-align: center; }
+        .print-btn { background: linear-gradient(45deg, #ec4899, #db2777); border: none; color: white; padding: 20px 60px; font-size: 1.5rem; border-radius: 50px; font-weight: 700; }
     </style>
 </head>
 <body>
-    <div class="container-fluid p-4">
-        <div class="newspaper">
-            <!-- Header -->
-            <div class="header">
-                <h1 style="font-size: 3.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">📰 BELIEVE IT DAILY</h1>
-                <p style="font-size: 1.5rem; opacity: 0.95; margin-top: 15px;">WhatsApp Group → AI Priority → Perfect Newspaper</p>
+    <div class="app">
+        <div class="header">
+            <h1>📰 జనం న్యూస్ - ZIP నుండి NEWSPAPER</h1>
+            <p>మీ ZIP file upload → AI stories extract → Perfect Telugu newspaper!</p>
+        </div>
+
+        <div class="drop-zone p-5 m-5" id="dropZone">
+            <h2>📦 ZIP File ఇక్కడ Drop చేయండి</h2>
+            <p>chat.txt + images (.jpg files) → Auto newspaper generation</p>
+            <input type="file" id="zipInput" accept=".zip" style="display: none;">
+            <button class="btn btn-primary btn-lg mt-4 px-5" onclick="document.getElementById('zipInput').click()">
+                ZIP File Select చేయండి
+            </button>
+        </div>
+
+        <div class="dual-panel">
+            <!-- LEFT: Extracted Stories -->
+            <div class="panel">
+                <h3>📋 Extracted Stories ({0})</h3>
+                <div id="storiesList"></div>
             </div>
 
-            <!-- Upload -->
-            <div class="upload-zone text-center" id="uploadZone">
-                <h2 style="font-size: 2rem; margin-bottom: 20px;">📱 Upload WhatsApp Group Export</h2>
-                <p>Export your news group chat → AI creates perfect newspaper automatically</p>
-                <input type="file" id="whatsappFile" accept=".txt" style="display: none;">
-                <button class="btn btn-primary btn-lg mt-4 px-5 py-3" style="font-size: 1.3rem;" onclick="document.getElementById('whatsappFile').click()">
-                    📤 Choose WhatsApp .txt File
-                </button>
-            </div>
-
-            <!-- AI Analysis -->
-            <div class="ai-analysis text-center" id="aiAnalysis" style="display: none;">
-                <h2 style="margin-bottom: 25px;">🤖 AI PRIORITY ANALYSIS COMPLETE</h2>
-                <div id="prioritySummary"></div>
-            </div>
-
-            <!-- Newspaper Preview -->
-            <div class="p-5" id="newspaperPreview" style="display: none;">
-                <div class="text-center mb-5">
-                    <h2 style="font-size: 2.5rem; color: #d32f2f;">FINAL NEWSPAPER LAYOUT</h2>
-                    <button class="generate-btn mt-4" id="generatePDF">🖨️ PRINT NEWSPAPER PDF</button>
+            <!-- RIGHT: Newspaper Preview -->
+            <div class="panel">
+                <h3>🗞️ AI Newspaper Layout</h3>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+                    <button class="print-btn" id="printBtn" style="display: none;">🖨️ PDF PRINT చేయండి</button>
                 </div>
-                <div id="newspaperLayout"></div>
+                <div id="newspaperPreview" class="newspaper-preview"></div>
             </div>
         </div>
     </div>
@@ -65,214 +65,186 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
-        let stories = [];
+        let extractedStories = [];
+        let imageMap = {};
 
-        document.getElementById('whatsappFile').addEventListener('change', handleUpload);
+        // Drop zone
+        const dropZone = document.getElementById('dropZone');
+        const zipInput = document.getElementById('zipInput');
 
-        function handleUpload(event) {
-            const file = event.target.files[0];
-            if (!file || !file.name.endsWith('.txt')) {
-                alert('Please select a WhatsApp export .txt file');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, preventDefaults));
+        ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, highlight));
+        ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, unhighlight));
+
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+        function highlight(e) { dropZone.classList.add('dragover'); }
+        function unhighlight(e) { dropZone.classList.remove('dragover'); }
+
+        dropZone.addEventListener('drop', handleDrop);
+        zipInput.addEventListener('change', handleZip);
+
+        async function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            await processZip(files[0]);
+        }
+
+        async function handleZip(e) {
+            await processZip(e.target.files[0]);
+        }
+
+        async function processZip(zipFile) {
+            if (!zipFile.name.endsWith('.zip')) {
+                alert('ZIP file మాత్రమే upload చేయండి');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                parseGroupMessages(e.target.result);
-            };
-            reader.readAsText(file);
+            try {
+                const zip = await JSZip.loadAsync(zipFile);
+                imageMap = {};
+
+                // Extract images first
+                for (const filename of Object.keys(zip.files)) {
+                    if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                        const blob = await zip.file(filename).async('blob');
+                        imageMap[filename] = URL.createObjectURL(blob);
+                    }
+                }
+
+                // Find and parse chat.txt
+                const chatFile = Object.keys(zip.files).find(f => f.toLowerCase().includes('chat.txt') || f.toLowerCase().includes('txt'));
+                if (!chatFile) {
+                    alert('chat.txt file ZIP లో లేదు');
+                    return;
+                }
+
+                const chatContent = await zip.file(chatFile).async('text');
+                extractedStories = parseJanamNewsChat(chatContent);
+                
+                renderStories();
+                generateNewspaper();
+                document.getElementById('printBtn').style.display = 'inline-block';
+            } catch (error) {
+                alert('ZIP process error: ' + error.message);
+            }
         }
 
-        function parseGroupMessages(content) {
+        function parseJanamNewsChat(content) {
             const lines = content.split('\n');
-            let currentStory = { sender: '', messages: [], wordCount: 0, hasImage: false };
-            stories = [];
+            let currentStory = { sender: '', text: '', images: [], timestamp: '' };
+            const stories = [];
 
             lines.forEach(line => {
                 line = line.trim();
                 if (!line) return;
 
-                // WhatsApp format: [DD/MM/YY, HH:MM:SS AM/PM] Name: Message
-                const match = line.match(/\[(\d{1,2}\/\d{1,2}\/\d{2}),\s*(\d{1,2}:\d{1,2}:\d{1,2}\s*(?:AM|PM))\]\s*([^:]+?):\s*(.*)/);
+                // Parse: [DD/MM/YY, HH:MM:SS PM] ~ Name: Message
+                const match = line.match(/\[(\d{1,2}\/\d{1,2}\/\d{2}),\s*(\d{1,2}:\d{1,2}:\d{1,2}\s*(?:AM|PM))\]\s*~\s*([^:]+?):\s*(.*)/);
                 if (match) {
+                    const timestamp = `${match[1]}, ${match[2]}`;
                     const sender = match[3].trim();
-                    const message = match[4].trim();
+                    let message = match[4].trim();
 
-                    // Check for END marker (case insensitive)
-                    if (message.toUpperCase().includes('END') || message.toUpperCase().includes('끝')) {
-                        // Complete story
-                        if (currentStory.messages.length > 0) {
-                            const storyText = currentStory.messages.join(' ');
-                            stories.push({
-                                sender: currentStory.sender,
-                                text: storyText,
-                                wordCount: storyText.split(' ').length,
-                                hasImage: currentStory.hasImage,
-                                priorityScore: calculatePriority(storyText, currentStory.hasImage, currentStory.sender)
-                            });
+                    // Check END markers: 🔚, End, 📩📩🔚
+                    if (message.match(/🔚|END|end|📩📩🔚/i)) {
+                        if (currentStory.text) {
+                            currentStory.timestamp = timestamp;
+                            stories.push(currentStory);
                         }
-                        currentStory = { sender: '', messages: [], wordCount: 0, hasImage: false };
+                        currentStory = { sender: '', text: '', images: [], timestamp: '' };
                     } else {
-                        // Add to current story
-                        if (currentStory.sender === '' || sender === currentStory.sender) {
-                            currentStory.sender = sender;
-                            currentStory.messages.push(message);
-                            currentStory.wordCount += message.split(' ').length;
-                            if (message.toLowerCase().includes('photo') || message.toLowerCase().includes('image') || message.match(/\.(jpg|png|gif)/i)) {
-                                currentStory.hasImage = true;
+                        if (currentStory.sender === '') currentStory.sender = sender;
+                        
+                        // Detect images
+                        const imageMatch = message.match(/<attached:\s*([^>]+?\.(jpg|jpeg|png|gif))/i);
+                        if (imageMatch) {
+                            const imgName = imageMatch[1];
+                            if (imageMap[imgName]) {
+                                currentStory.images.push(imageMap[imgName]);
                             }
                         }
+                        
+                        currentStory.text += message + ' ';
                     }
                 }
             });
 
-            // Sort by priority (newest first)
-            stories.sort((a, b) => b.priorityScore - a.priorityScore);
-            showAIResults();
+            // Sort by length/priority (longest first)
+            return stories.sort((a, b) => b.text.length - a.text.length);
         }
 
-        function calculatePriority(text, hasImage, sender) {
-            let score = 0;
-            const lowerText = text.toLowerCase();
-
-            // Length priority (longer = more important)
-            score += Math.min(text.split(' ').length, 50);
-
-            // Image bonus
-            if (hasImage) score += 25;
-
-            // Keyword priority
-            const highPriority = ['breaking', 'urgent', 'alert', 'exclusive', 'pm', 'modi', 'president', 'chief minister'];
-            const mediumPriority = ['rupee', 'sensex', 'stock', 'bengaluru', 'delhi', 'mumbai'];
-            highPriority.forEach(word => { if (lowerText.includes(word)) score += 30; });
-            mediumPriority.forEach(word => { if (lowerText.includes(word)) score += 15; });
-
-            // Sender reputation (if known reporters)
-            if (sender.match(/reporter|editor|chief|correspondent/i)) score += 20;
-
-            return score;
-        }
-
-        function showAIResults() {
-            document.getElementById('uploadZone').style.display = 'none';
-            document.getElementById('aiAnalysis').style.display = 'block';
-
-            const topStory = stories[0];
-            const page1Stories = stories.slice(1, 4);
-            const fillers = stories.slice(4, 10);
-
-            document.getElementById('prioritySummary').innerHTML = `
-                <div class="row text-center">
-                    <div class="col-md-4">
-                        <div class="p-4 bg-white rounded shadow mb-4" style="opacity: 0.9;">
-                            <span class="priority-badge p1">🥇 PAGE 1 HERO</span>
-                            <h4>${topStory?.text.substring(0, 80)}...</h4>
-                            <small>${topStory?.sender} (${topStory?.priorityScore} pts)</small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-4 bg-white rounded shadow mb-4" style="opacity: 0.9;">
-                            <span class="priority-badge p2">🥈 PAGE 1 STORIES</span>
-                            <p>${page1Stories.map(s => s.sender).join(', ')}</p>
-                            <small>${page1Stories.length} stories</small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-4 bg-white rounded shadow mb-4" style="opacity: 0.9;">
-                            <span class="priority-badge p3">📄 FILLERS</span>
-                            <p>${fillers.length} supporting stories</p>
-                            <small>Page 2-3 columns</small>
-                        </div>
-                    </div>
+        function renderStories() {
+            const container = document.getElementById('storiesList');
+            container.innerHTML = extractedStories.map((story, index) => `
+                <div class="story-item">
+                    <div class="story-sender">${index + 1}. ${story.sender}</div>
+                    <div class="story-text">${story.text.substring(0, 300)}${story.text.length > 300 ? '...' : ''}</div>
+                    ${story.images.map(img => `<img src="${img}" class="story-image" alt="Story image">`).join('')}
+                    <div class="end-marker">🔚 END</div>
+                    <small>${story.timestamp} | ${story.text.length} chars | ${story.images.length} images</small>
                 </div>
-            `;
-
-            generateNewspaperPreview();
-            document.getElementById('newspaperPreview').style.display = 'block';
+            `).join('');
         }
 
-        function generateNewspaperPreview() {
-            const container = document.getElementById('newspaperLayout');
+        function generateNewspaper() {
+            const preview = document.getElementById('newspaperPreview');
             let html = '';
 
-            // PAGE 1: Hero story (biggest)
-            const hero = stories[0];
+            // PAGE 1: Top story (longest)
+            const topStory = extractedStories[0];
             html += `
-                <div class="page1-hero">
-                    <h1>${hero?.text}</h1>
-                    <div style="font-size: 1.4rem; margin-top: 20px; opacity: 0.95;">
-                        ${hero?.sender} | Priority Score: ${hero?.priorityScore}
-                    </div>
+                <div class="page-hero">
+                    <h1>${topStory.sender}</h1>
+                    <div style="font-size: 1.4rem; margin: 30px 0;">${topStory.text.substring(0, 400)}...</div>
+                    ${topStory.images.slice(0,1).map(img => `<img src="${img}" style="width:100%; height:300px; object-fit:cover; border-radius:15px;">`).join('')}
                 </div>
             `;
 
-            // PAGE 1: Secondary stories (3 stories)
-            html += '<div class="multi-story">';
-            stories.slice(1, 4).forEach(story => {
+            // Multiple stories per page
+            extractedStories.slice(1).forEach((story, index) => {
                 html += `
-                    <div class="story-card">
-                        <h3 style="color: #d32f2f; margin-bottom: 15px;">${story.text.substring(0, 100)}...</h3>
-                        <div style="font-weight: 600; color: #666;">${story.sender}</div>
-                        <small>Score: ${story.priorityScore} (${story.wordCount} words${story.hasImage ? ' + image' : ''})</small>
+                    <div class="story-card" style="break-inside: avoid; margin-bottom: 30px;">
+                        <h3 style="color: #dc2626; margin-bottom: 15px;">${story.sender}</h3>
+                        <div style="line-height: 1.8;">${story.text.substring(0, 250)}...</div>
+                        ${story.images.slice(0,1).map(img => `<img src="${img}" style="width:100%; height:200px; object-fit:cover; border-radius:10px; margin-top:15px;">`).join('')}
+                        <div style="color: #666; font-size: 0.9rem; margin-top: 10px;">${story.timestamp}</div>
                     </div>
                 `;
             });
-            html += '</div>';
 
-            // PAGE 2-3: Fillers in columns
-            html += '<div class="row mt-5">';
-            stories.slice(4, 12).forEach((story, index) => {
-                const colClass = index % 3 === 0 ? 'col-md-4 mb-4' : index % 3 === 1 ? 'col-md-4 mb-4' : 'col-md-4 mb-4';
-                html += `
-                    <div class="${colClass}">
-                        <div class="story-card">
-                            <h5>${story.text.substring(0, 80)}...</h5>
-                            <div style="color: #888; font-size: 0.9rem;">${story.sender}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-
-            container.innerHTML = html;
+            preview.innerHTML = html;
         }
 
-        // PDF Export
-        document.getElementById('generatePDF').onclick = async () => {
-            const newspaper = document.querySelector('.newspaper');
+        // Print PDF
+        document.getElementById('printBtn').onclick = async () => {
+            const rightPanel = document.querySelector('.panel:last-child');
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            try {
-                const canvas = await html2canvas(newspaper, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#ffffff',
-                    width: newspaper.scrollWidth,
-                    height: newspaper.scrollHeight
-                });
+            const canvas = await html2canvas(rightPanel, {
+                scale: 2.5,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+            });
 
-                const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 210;
-                const pageHeight = 295;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 210;
+            const pageHeight = 295;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
 
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
                 doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pageHeight;
-
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight;
-                    doc.addPage();
-                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                    heightLeft -= pageHeight;
-                }
-
-                doc.save(`believe-it-${new Date().toISOString().slice(0,10)}.pdf`);
-            } catch (e) {
-                alert('PDF generation failed. Try again.');
             }
+
+            doc.save('janam-news-newspaper.pdf');
         };
     </script>
 </body>
