@@ -1,114 +1,169 @@
 <!DOCTYPE html>
-<html lang="te">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Janam News - ZIP Newspaper Generator</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;500;700&display=swap');
 
+/* ✅ PRINT MARGINS (ONLY ADDITION) */
 @page {
     size: A4;
-    margin: 0;
+    margin: 12mm;
 }
 
 body {
-    background: #bfbfbf;
     font-family: 'Noto Sans Telugu', sans-serif;
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
 }
 
-/* PAGE */
-.page {
-    width: 210mm;
-    height: 297mm;
+.app {
+    max-width: 1400px;
+    margin: 0 auto;
     background: white;
-    margin: 8mm auto;
-    padding: 12mm 10mm;
-    page-break-after: always;
+    border-radius: 25px;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.25);
+    overflow: hidden;
 }
 
-/* HEADER */
 .header {
+    background: linear-gradient(45deg, #dc2626, #b91c1c);
+    color: white;
+    padding: 50px;
     text-align: center;
-    border-bottom: 3px solid black;
-    padding-bottom: 4mm;
-    margin-bottom: 4mm;
 }
 
 .header h1 {
-    font-size: 34px;
+    font-size: 3rem;
     font-weight: 700;
-    line-height: 1;
 }
 
-/* CONTENT */
-.columns {
-    column-count: 3;
-    column-gap: 8mm;
-    column-fill: auto;
-}
-
-/* ARTICLE */
-.article {
-    break-inside: avoid;
-    margin-bottom: 4mm;
-}
-
-.article h2 {
-    font-size: 14px;
-    font-weight: 700;
-    margin-bottom: 2mm;
-}
-
-.article img {
-    width: 100%;
-    height: 85px;
-    object-fit: cover;
-    margin: 2mm 0;
-}
-
-.article p {
-    font-size: 11px;
-    line-height: 1.45;
-    text-align: justify;
-}
-
-/* UPLOAD */
-#upload {
-    background: white;
-    padding: 12px;
+.drop-zone {
+    border: 5px dashed #3b82f6;
+    border-radius: 20px;
+    padding: 80px;
     text-align: center;
-    margin: 10px;
+    margin: 50px;
+    cursor: pointer;
 }
 
+.dual-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 40px;
+}
+
+.panel {
+    background: #f8fafc;
+    border-radius: 20px;
+    padding: 30px; /* reduced for print safety */
+    height: 700px;
+    overflow-y: auto;
+}
+
+.story-item {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.story-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin: 15px 0;
+}
+
+/* ✅ SAFE PRINT WIDTH */
+.newspaper-preview {
+    column-count: 3;
+    column-gap: 20px;
+    width: 100%;
+    max-width: 186mm;
+    margin: 0 auto;
+}
+
+.print-btn {
+    background: linear-gradient(45deg, #ec4899, #db2777);
+    border: none;
+    color: white;
+    padding: 20px 60px;
+    font-size: 1.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+}
+
+/* ✅ PRINT SAFETY */
 @media print {
-    body { background: none; }
-    #upload { display: none; }
+    body {
+        background: white;
+    }
+
+    .panel {
+        overflow: visible !important;
+    }
+
+    .newspaper-preview {
+        column-fill: auto;
+    }
+
+    .drop-zone,
+    .print-btn {
+        display: none !important;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<div id="upload">
-    <h3>ZIP Upload (chat.txt + images)</h3>
-    <input type="file" id="zipInput" accept=".zip">
+<div class="app">
+    <div class="header">
+        <h1>📰 జనం న్యూస్</h1>
+        <p>ZIP → Newspaper</p>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+        <h2>ZIP File Upload</h2>
+        <input type="file" id="zipInput" accept=".zip" hidden>
+        <button class="btn btn-primary btn-lg mt-3" onclick="zipInput.click()">Select ZIP</button>
+    </div>
+
+    <div class="dual-panel">
+        <div class="panel">
+            <h3>Extracted Stories</h3>
+            <div id="storiesList"></div>
+        </div>
+
+        <div class="panel">
+            <button class="print-btn mb-4" id="printBtn">🖨️ Print PDF</button>
+            <div id="newspaperPreview" class="newspaper-preview"></div>
+        </div>
+    </div>
 </div>
 
-<div id="paper"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
 <script>
+let extractedStories = [];
 let imageMap = {};
-let articles = [];
-const MAX_PAGES = 8;   // change to 10 if required
 
-zipInput.onchange = async e => {
-    const zip = await JSZip.loadAsync(e.target.files[0]);
+zipInput.onchange = async e => processZip(e.target.files[0]);
 
+async function processZip(file) {
+    const zip = await JSZip.loadAsync(file);
     imageMap = {};
+
     for (let f in zip.files) {
         if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
@@ -116,91 +171,59 @@ zipInput.onchange = async e => {
         }
     }
 
-    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
-    const text = await zip.file(txtFile).async("text");
+    const txt = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const content = await zip.file(txt).async("text");
 
-    articles = parseText(text);
-    render();
-};
-
-/* IMPORTANT CONTENT FILTER */
-function isValid(text) {
-    if (!text) return false;
-    if (text.includes("This message was deleted")) return false;
-    if (text.length < 50) return false;
-    return true;
+    extractedStories = parseChat(content);
+    renderStories();
+    generateNewspaper();
 }
 
-function parseText(text) {
+function parseChat(text) {
     const lines = text.split("\n");
-    let result = [];
-    let current = { text: "", image: null };
+    let stories = [];
+    let cur = { text: "", images: [] };
 
-    lines.forEach(line => {
-        const m = line.match(/\[(.*?)\]\s*~.*?:\s*(.*)/);
-        if (!m) return;
+    lines.forEach(l => {
+        if (l.includes("This message was deleted")) return;
 
-        let msg = m[2];
-
-        if (/END|🔚/i.test(msg)) {
-            if (isValid(current.text)) result.push(current);
-            current = { text: "", image: null };
+        if (/END|🔚/i.test(l)) {
+            if (cur.text.length > 50) stories.push(cur);
+            cur = { text: "", images: [] };
             return;
         }
 
-        if (!isValid(msg)) return;
-
-        const img = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
+        const img = l.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (img && imageMap[img[1]]) {
-            current.image = imageMap[img[1]];
+            cur.images.push(imageMap[img[1]]);
         } else {
-            current.text += msg + " ";
+            cur.text += l + " ";
         }
     });
 
-    if (isValid(current.text)) result.push(current);
-    return result;
+    return stories;
 }
 
-function titleFrom(text) {
-    return text.split(" ").slice(0, 8).join(" ") + "...";
+function renderStories() {
+    storiesList.innerHTML = extractedStories.map((s,i)=>`
+        <div class="story-item">
+            <b>Story ${i+1}</b>
+            <p>${s.text.slice(0,300)}...</p>
+        </div>
+    `).join("");
 }
 
-function render() {
-    const paper = document.getElementById("paper");
-    paper.innerHTML = "";
-
-    const perPage = Math.ceil(articles.length / MAX_PAGES);
-    let index = 0;
-
-    for (let p = 1; p <= MAX_PAGES && index < articles.length; p++) {
-        const page = document.createElement("div");
-        page.className = "page";
-
-        page.innerHTML = `
-            <div class="header">
-                <h1>జనం న్యూస్</h1>
-                <small>Page ${p}</small>
-            </div>
-            <div class="columns"></div>
-        `;
-
-        const col = page.querySelector(".columns");
-
-        for (let i = 0; i < perPage && index < articles.length; i++, index++) {
-            const a = articles[index];
-            col.innerHTML += `
-                <div class="article">
-                    <h2>${titleFrom(a.text)}</h2>
-                    ${a.image ? `<img src="${a.image}">` : ""}
-                    <p>${a.text.slice(0, 850)}</p>
-                </div>
-            `;
-        }
-
-        paper.appendChild(page);
-    }
+function generateNewspaper() {
+    newspaperPreview.innerHTML = extractedStories.map(s=>`
+        <div style="break-inside:avoid; margin-bottom:20px">
+            <h4>${s.text.split(" ").slice(0,8).join(" ")}...</h4>
+            ${s.images[0] ? `<img src="${s.images[0]}" style="width:100%;height:200px;object-fit:cover">` : ""}
+            <p>${s.text.slice(0,700)}</p>
+        </div>
+    `).join("");
 }
+
+printBtn.onclick = () => window.print();
 </script>
 
 </body>
