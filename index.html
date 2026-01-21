@@ -2,7 +2,7 @@
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్ - వర్గీకరించబడిన ఎడిషన్</title>
+<title>జనం న్యూస్ - పూర్తి వార్తల ఎడిషన్</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -12,47 +12,66 @@
     body { background: #222; font-family: 'Noto Sans Telugu', sans-serif; padding-bottom: 50px; }
 
     .page {
-        width: 210mm; height: 297mm; background: white; margin: 10mm auto;
-        padding: 12mm; position: relative; page-break-after: always;
-        border: 6px double black; overflow: hidden;
+        width: 210mm; 
+        min-height: 297mm; /* Height ని ఫిక్స్ చేయకుండా min-height ఇచ్చాను */
+        background: white; 
+        margin: 10mm auto;
+        padding: 12mm; 
+        position: relative; 
+        page-break-after: always;
+        border: 6px double black; 
     }
 
-    /* Category Ribbon */
     .category-ribbon {
-        background: #000; color: #fff; padding: 5px 15px;
-        font-size: 14px; font-weight: bold; text-transform: uppercase;
-        display: inline-block; margin-bottom: 5px;
+        background: #b91c1c; color: #fff; padding: 4px 12px;
+        font-size: 13px; font-weight: bold; display: inline-block; margin-bottom: 5px;
     }
 
     .header { text-align: center; border-bottom: 3px solid black; margin-bottom: 5mm; }
-    .header h1 { font-size: 55px; font-weight: 800; color: #b91c1c; }
+    .header h1 { font-size: 50px; font-weight: 800; color: #b91c1c; }
     
     .header-meta {
         display: flex; justify-content: space-between; font-weight: bold;
-        font-size: 14px; border-top: 1px solid black; padding: 5px 10px;
+        font-size: 13px; border-top: 1px solid black; padding: 5px 10px;
     }
 
+    /* 3 Column Layout - Fixed Overflow */
     .columns {
-        column-count: 3; column-gap: 20px; column-rule: 1px solid #000;
-        height: calc(297mm - 85mm); width: 100%;
+        column-count: 3; 
+        column-gap: 15px; 
+        column-rule: 0.5px solid #ccc;
+        text-align: justify;
     }
 
+    /* బాక్స్ లోపల వార్త కట్ అవ్వకుండా ఉండేలా మార్పులు */
     .news-box {
-        break-inside: avoid; border: 1.5px solid #000;
-        margin-bottom: 20px; padding: 10px; background: #fff;
+        display: block;
+        width: 100%;
+        margin-bottom: 15px; 
+        padding: 8px; 
+        border: 1px solid #000;
+        background: #fff;
+        page-break-inside: avoid; /* వార్త మధ్యలో విరిగిపోకుండా చూస్తుంది */
+        break-inside: avoid-column;
     }
 
     .news-box h2 {
-        font-size: 16px; margin-bottom: 8px; color: #000;
-        border-bottom: 2px solid #b91c1c; padding-bottom: 3px;
+        font-size: 15px; margin-bottom: 6px; color: #000;
+        border-bottom: 2px solid #b91c1c; padding-bottom: 2px;
     }
 
     .news-box img {
-        width: 100%; max-height: 250px; object-fit: contain;
-        margin-bottom: 10px; border: 1px solid #ddd;
+        width: 100%; height: auto; /* Image size ని ఫిక్స్ చేయలేదు */
+        max-height: 250px; object-fit: contain;
+        margin-bottom: 8px; border: 1px solid #ddd;
     }
 
-    .news-box p { font-size: 12px; line-height: 1.8; text-align: justify; }
+    .news-box p { 
+        font-size: 11.5px; 
+        line-height: 1.6; 
+        color: #111;
+        white-space: pre-wrap; /* కొత్త లైన్లను గుర్తిస్తుంది */
+    }
 
     #ui { background: white; padding: 20px; text-align: center; border-bottom: 5px solid #b91c1c; position: sticky; top:0; z-index:100; }
 </style>
@@ -60,9 +79,9 @@
 <body>
 
 <div id="ui">
-    <h2>📰 జనం న్యూస్ - వర్గీకరించబడిన ఎడిషన్ (Categorized)</h2>
+    <h2>📰 జనం న్యూస్ - Full Content Version</h2>
     <input type="file" id="zipInput" accept=".zip">
-    <p class="small mt-2">Politics | Sports | Technology | Crime | Agriculture</p>
+    <p class="small mt-2">వర్గీకరణ: రాజకీయం | విద్య | క్రీడలు | వ్యవసాయం | నేరాలు</p>
 </div>
 
 <div id="paper"></div>
@@ -70,13 +89,13 @@
 <script>
 let imageMap = {};
 
-// Keyword rules for categorization
+// వర్గీకరణ కీవర్డ్స్
 const categories = {
-    "రాజకీయం (Politics)": ["ప్రభుత్వం", "మున్సిపల్", "ఎన్నికలు", "పార్టీ", "ముఖ్యమంత్రి", "మంత్రి"],
-    "క్రీడలు (Sports)": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం", "కోచ్"],
-    "సాంకేతికత (Technology)": ["ఫోన్", "టెక్నాలజీ", "ఆన్లైన్", "డిజిటల్", "యాప్"],
-    "వ్యవసాయం (Agriculture)": ["రైతు", "పంట", "విత్తనాలు", "వరి", "పత్తి", "వేరుశనగ"],
-    "నేరాలు (Crime)": ["పోలీస్", "అరెస్ట్", "కేసు", "నేరం", "దొంగతనం"]
+    "విద్య & శిక్షణ": ["విద్యార్థులు", "ఒకేషనల్", "స్కూల్", "కాలేజీ", "ట్రైనింగ్", "పరీక్షలు"],
+    "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "పార్టీ", "ముఖ్యమంత్రి", "మంత్రి", "మున్సిపల్"],
+    "వ్యవసాయం": ["రైతు", "పంట", "విత్తనాలు", "వరి", "పత్తి", "మార్కెట్"],
+    "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "విజయకేతనం", "క్రీడలు"],
+    "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "దొంగతనం"]
 };
 
 zipInput.onchange = async e => {
@@ -96,7 +115,7 @@ zipInput.onchange = async e => {
 function parseAndCategorize(text) {
     const lines = text.split("\n");
     let articles = [];
-    let current = { text: "", image: null, category: "జనరల్ (General)" };
+    let current = { text: "", image: null, category: "జనరల్" };
 
     lines.forEach(line => {
         const match = line.match(/\[.*?\]\s*~?.*?\s*:\s*(.*)/);
@@ -106,21 +125,19 @@ function parseAndCategorize(text) {
 
         const imgMatch = content.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (imgMatch) {
-            if (current.text.length > 30) articles.push({...current});
-            current = { text: "", image: imageMap[imgMatch[1].trim()], category: "జనరల్ (General)" };
+            if (current.text.length > 20) articles.push({...current});
+            current = { text: "", image: imageMap[imgMatch[1].trim()], category: "జనరల్" };
         } else if (/END|🔚/i.test(content)) {
-            if (current.text.length > 30) articles.push({...current});
-            current = { text: "", image: null, category: "జనరల్ (General)" };
+            if (current.text.length > 20) articles.push({...current});
+            current = { text: "", image: null, category: "జనరల్" };
         } else {
-            current.text += content + " ";
-            // Dynamic categorization logic
+            current.text += content + "\n";
             for (let cat in categories) {
-                if (categories[cat].some(key => content.includes(key))) {
-                    current.category = cat;
-                }
+                if (categories[cat].some(key => content.includes(key))) current.category = cat;
             }
         }
     });
+    if (current.text.length > 20) articles.push(current);
     return articles;
 }
 
@@ -128,7 +145,6 @@ function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
     
-    // Group articles by category for page separation
     const grouped = {};
     data.forEach(a => {
         if (!grouped[a.category]) grouped[a.category] = [];
@@ -138,33 +154,41 @@ function render(data) {
     let pageNum = 1;
     for (let cat in grouped) {
         const catArticles = grouped[cat];
-        const page = document.createElement("div");
-        page.className = "page";
-        page.innerHTML = `
-            <div class="header">
-                <div class="category-ribbon">${cat}</div>
-                <h1>జనం న్యూస్</h1>
-                <div class="header-meta">
-                    <span>నిజాయితీ గల వార్తలు</span>
-                    <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
-                    <span>పేజీ: ${pageNum++}</span>
+        
+        // ఒక కేటగిరీకి ఎన్ని పేజీలు కావాలో లెక్కిస్తుంది
+        const articlesPerPage = 6; 
+        for (let i = 0; i < catArticles.length; i += articlesPerPage) {
+            const page = document.createElement("div");
+            page.className = "page";
+            page.innerHTML = `
+                <div class="header">
+                    <div class="category-ribbon">${cat}</div>
+                    <h1>జనం న్యూస్</h1>
+                    <div class="header-meta">
+                        <span>VOLUME: 01</span>
+                        <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
+                        <span>పేజీ: ${pageNum++}</span>
+                    </div>
                 </div>
-            </div>
-            <div class="columns"></div>
-        `;
-
-        const col = page.querySelector(".columns");
-        catArticles.forEach(item => {
-            const box = document.createElement("div");
-            box.className = "news-box";
-            box.innerHTML = `
-                <h2>${item.text.split(" ").slice(0, 6).join(" ")}...</h2>
-                ${item.image ? `<img src="${item.image}">` : ""}
-                <p>${item.text}</p>
+                <div class="columns"></div>
             `;
-            col.appendChild(box);
-        });
-        paper.appendChild(page);
+
+            const col = page.querySelector(".columns");
+            const pageData = catArticles.slice(i, i + articlesPerPage);
+            
+            pageData.forEach(item => {
+                const box = document.createElement("div");
+                box.className = "news-box";
+                const head = item.text.split("\n")[0].substring(0, 50) + "...";
+                box.innerHTML = `
+                    <h2>${head}</h2>
+                    ${item.image ? `<img src="${item.image}">` : ""}
+                    <p>${item.text}</p>
+                `;
+                col.appendChild(box);
+            });
+            paper.appendChild(page);
+        }
     }
 }
 </script>
