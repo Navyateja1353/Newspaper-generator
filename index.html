@@ -2,7 +2,7 @@
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్</title>
+<title>జనం న్యూస్ - 10 Page Edition</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
@@ -10,116 +10,121 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-@page {
-    size: A4;
-    margin: 0;
-}
+@page { size: A4; margin: 0; }
 
 body {
-    background: #444;
+    background: #333;
     font-family: 'Noto Sans Telugu', sans-serif;
     padding-bottom: 50px;
 }
 
-/* PAGE WITH BORDER */
+/* PAGE WITH DOUBLE BORDER */
 .page {
     width: 210mm;
     height: 297mm;
     background: white;
     margin: 10mm auto;
-    padding: 10mm;
+    padding: 12mm;
     position: relative;
     page-break-after: always;
     overflow: hidden;
-    border: 5px double black; /* Strong 4-side border */
+    border: 6px double black; /* Standard Newspaper Frame */
 }
 
-/* HEADER */
+/* NEWSPAPER HEADER */
 .header {
     text-align: center;
     border-bottom: 3px solid black;
-    margin-bottom: 4mm;
+    margin-bottom: 5mm;
     padding-bottom: 2mm;
 }
 
 .header h1 {
-    font-size: 45px;
-    font-weight: 700;
+    font-size: 50px;
+    font-weight: 800;
     color: #b91c1c;
+    letter-spacing: -1px;
 }
 
 .header-meta {
     display: flex;
     justify-content: space-between;
     font-weight: bold;
-    font-size: 13px;
+    font-size: 14px;
     border-top: 1px solid black;
-    padding: 3px 10px;
+    padding: 4px 10px;
+    background: #f8f8f8;
 }
 
 /* 3 COLUMN LAYOUT */
 .columns {
     column-count: 3;
     column-gap: 15px;
-    height: calc(297mm - 60mm);
+    column-rule: 0.5px solid #ddd;
+    height: calc(297mm - 65mm);
 }
 
-/* BOXED ARTICLE STYLE */
+/* BOXED ARTICLE (NO NAMES) */
 .article {
     break-inside: avoid;
     margin-bottom: 15px;
     padding: 10px;
-    border: 1.5px solid black; /* Individual box for 1 data */
+    border: 1.5px solid #000; /* Article Box */
     background: #fff;
 }
 
 .article h2 {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
-    margin-bottom: 6px;
-    color: #b91c1c;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 8px;
+    color: #000;
+    line-height: 1.4;
+    border-bottom: 2px solid #b91c1c;
+    padding-bottom: 4px;
 }
 
 .article img {
     width: 100%;
-    max-height: 150px;
-    object-fit: contain; /* Shows full image */
-    margin: 6px 0;
-    border: 0.5px solid #ccc;
+    max-height: 180px;
+    object-fit: contain;
+    margin: 8px 0;
+    border: 1px solid #eee;
+    background: #fafafa;
 }
 
 .article p {
-    font-size: 11.5px;
-    line-height: 1.6;
+    font-size: 11px;
+    line-height: 1.7;
     text-align: justify;
-    white-space: pre-wrap; /* Keeps Telugu formatting */
+    color: #111;
 }
 
-#upload-panel {
+#ui-panel {
     background: white;
     padding: 20px;
     text-align: center;
+    border-bottom: 5px solid #b91c1c;
     position: sticky;
     top: 0;
-    z-index: 1000;
-    border-bottom: 4px solid #b91c1c;
+    z-index: 9999;
 }
 
 @media print {
     body { background: none; padding: 0; }
-    #upload-panel { display: none; }
-    .page { margin: 0; border: 5px double black !important; }
+    #ui-panel { display: none; }
+    .page { margin: 0; border: 6px double black !important; }
 }
 </style>
 </head>
 
 <body>
 
-<div id="upload-panel">
-    <h2>జనం న్యూస్ - Newspaper Generator</h2>
-    <input type="file" id="zipInput" accept=".zip">
-    <p style="font-size: 12px; color: #666;">Removing names: Chinni... | Removing Deleted Messages | 3 Columns | 8-10 Pages</p>
+<div id="ui-panel">
+    <h2 style="color:#b91c1c">జనం న్యూస్ - Digital Archive</h2>
+    <input type="file" id="zipInput" accept=".zip" class="mt-2">
+    <p style="font-size: 12px; margin-top: 8px; color: #555;">
+        <b>Filters Active:</b> Names Removed | END/Deleted Messages Removed | 3 Columns | 10 Pages
+    </p>
 </div>
 
 <div id="paper"></div>
@@ -127,8 +132,6 @@ body {
 <script>
 let imageMap = {};
 const MAX_PAGES = 10;
-// ✅ ADD UNWANTED NAMES HERE
-const BLOCKED_NAMES = ["chinni", "admin", "unknown", "janam news desk"]; 
 
 zipInput.onchange = async e => {
     const file = e.target.files[0];
@@ -137,15 +140,16 @@ zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(file);
     imageMap = {};
     
-    // Load Images
+    // Step 1: Map all images from the ZIP
     for (let f in zip.files) {
         if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
-            const name = f.split('/').pop();
-            imageMap[name] = URL.createObjectURL(blob);
+            const filename = f.split('/').pop();
+            imageMap[filename] = URL.createObjectURL(blob);
         }
     }
 
+    // Step 2: Parse the _chat.txt
     const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
     const text = await zip.file(txtFile).async("text");
 
@@ -156,49 +160,53 @@ zipInput.onchange = async e => {
 function parseText(text) {
     const lines = text.split("\n");
     let results = [];
-    let current = { text: "", image: null, sender: "" };
+    let current = { text: "", image: null };
 
     lines.forEach(line => {
-        // Match: [Date, Time] ~ Name: Message
-        const m = line.match(/\[.*?\]\s*~?\s*(.*?):\s*(.*)/);
+        // WhatsApp regex to isolate the message from the metadata
+        const m = line.match(/\[.*?\]\s*~?\s*.*?\s*:\s*(.*)/);
         if (!m) return;
 
-        const sender = m[1].trim();
-        const msg = m[2].trim();
+        const msg = m[1].trim();
 
-        // 1. SKIP BLOCKED NAMES (Chinni, etc.)
-        if (BLOCKED_NAMES.some(name => sender.toLowerCase().includes(name.toLowerCase()))) return;
-
-        // 2. SKIP DELETED/JUNK
+        // 1. FILTER: Skip Deleted or Junk lines
         if (msg.includes("This message was deleted") || msg.includes("omitted")) return;
 
-        // 3. HANDLE "END" MESSAGE
-        if (/END|🔚/i.test(msg)) {
-            if (current.text.length > 20) results.push({...current});
-            current = { text: "", image: null, sender: "" };
+        // 2. FILTER: Detect END markers
+        if (/END|🔚|📩📩🔚/i.test(msg)) {
+            if (current.text.trim().length > 30) {
+                results.push({...current});
+            }
+            current = { text: "", image: null };
             return;
         }
 
-        // 4. COLLECT DATA
+        // 3. IMAGE EXTRACTION
         const imgMatch = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (imgMatch) {
             const imgName = imgMatch[1].trim();
             if (imageMap[imgName]) current.image = imageMap[imgName];
         } else {
-            current.sender = sender;
+            // 4. CONTENT COLLECTION
             current.text += msg + "\n";
         }
     });
 
-    if (current.text.length > 20) results.push(current);
+    if (current.text.trim().length > 30) results.push(current);
     return results;
+}
+
+// Generates a headline from the first few words of the message instead of a name
+function generateHeadline(text) {
+    const words = text.trim().split(/\s+/);
+    return words.slice(0, 6).join(" ") + "...";
 }
 
 function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
 
-    // Math to ensure 8 to 10 pages
+    // Math to spread data across 10 pages
     const perPage = Math.ceil(data.length / MAX_PAGES);
     let index = 0;
 
@@ -212,12 +220,15 @@ function render(data) {
             <div class="header">
                 <h1>జనం న్యూస్</h1>
                 <div class="header-meta">
-                    <span>ఆంధ్రప్రదేశ్</span>
+                    <span>తెలుగు దినపత్రిక</span>
                     <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
                     <span>పేజీ: ${p}</span>
                 </div>
             </div>
             <div class="columns"></div>
+            <div style="position:absolute; bottom:15px; left:50%; transform:translateX(-50%); font-size:10px; font-weight:bold;">
+                JANAM NEWS - AP EDITION
+            </div>
         `;
 
         const columnContainer = page.querySelector(".columns");
@@ -227,11 +238,8 @@ function render(data) {
             const box = document.createElement("div");
             box.className = "article";
             
-            // Title is derived from sender name
-            const title = art.sender || "వార్తలు";
-
             box.innerHTML = `
-                <h2>${title}</h2>
+                <h2>${generateHeadline(art.text)}</h2>
                 ${art.image ? `<img src="${art.image}">` : ""}
                 <p>${art.text}</p>
             `;
