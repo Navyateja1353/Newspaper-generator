@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Janam News - Multi-Page Edition</title>
+    <title>Janam News - Professional Multi-Page</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -12,98 +12,92 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;700&display=swap');
 
-        body { font-family: 'Noto Sans Telugu', sans-serif; background: #525659; padding: 40px 0; }
+        body { font-family: 'Noto Sans Telugu', sans-serif; background: #333; padding: 20px; }
         
-        /* Newspaper Page Styling */
         .newspaper-page {
-            width: 210mm; /* A4 Width */
+            width: 210mm; 
             min-height: 297mm;
             background: white;
-            margin: 0 auto 20px auto;
-            padding: 15mm;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            border: 2px solid #000;
+            margin: 0 auto 30px auto;
+            padding: 12mm;
+            border: 1px solid #000;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
             position: relative;
-            overflow: hidden;
         }
 
         .newspaper-header {
             text-align: center;
-            border-bottom: 5px double #000;
-            margin-bottom: 15px;
+            border-bottom: 4px solid #000;
+            margin-bottom: 10px;
         }
 
-        .newspaper-header h1 { font-size: 4rem; font-weight: 800; margin: 0; }
+        .newspaper-header h1 { font-size: 3.5rem; font-weight: 900; margin: 0; color: #000; }
 
-        /* Multi-column layout with no gaps */
         .content-columns {
             column-count: 3;
             column-gap: 15px;
-            column-rule: 0.5px solid #000;
+            column-rule: 0.5px solid #888;
             text-align: justify;
         }
 
         .story-block {
-            display: inline-block; /* Prevents splitting a single story across columns if too short */
-            width: 100%;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 10px;
+            display: block;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            break-inside: avoid;
         }
 
         .story-headline {
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 5px;
+            font-size: 1rem;
+            margin-bottom: 4px;
             color: #b91c1c;
-            text-transform: uppercase;
+            line-height: 1.2;
         }
 
         .story-img {
             width: 100%;
+            display: block;
             margin: 5px 0;
-            border: 1px solid #000;
+            border: 0.5px solid #000;
+            max-height: 150px;
+            object-fit: cover;
         }
 
-        .page-number {
-            position: absolute;
-            bottom: 10mm;
-            right: 15mm;
-            font-weight: bold;
-        }
+        .text-content { font-size: 0.85rem; line-height: 1.4; color: #222; }
 
         #controls {
             position: fixed;
             top: 20px;
             left: 20px;
-            z-index: 1000;
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            z-index: 9999;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
     </style>
 </head>
 <body>
 
 <div id="controls">
-    <h5>Controls</h5>
+    <h6>📰 Newspaper Settings</h6>
     <input type="file" id="zipInput" accept=".zip" class="form-control mb-2">
-    <button class="btn btn-danger w-100" id="printBtn">Generate 8-10 Page PDF</button>
+    <button class="btn btn-primary w-100" id="printBtn" style="display:none;">Download 8-10 Page PDF</button>
 </div>
 
-<div id="newspaper-wrapper">
-    </div>
+<div id="newspaper-wrapper"></div>
 
 <script>
     let imageMap = {};
-    const BLACKLISTED_NAMES = ['chinni', 'admin', 'unknown', 'group']; // Add names here
+    const BLACKLISTED = ['chinni', 'deleted', 'this message was deleted', 'omitted'];
 
     document.getElementById('zipInput').onchange = async (e) => {
         const zipFile = e.target.files[0];
         const zip = await JSZip.loadAsync(zipFile);
         
-        // Load Images
+        // 1. Map all images from ZIP
         for (const filename of Object.keys(zip.files)) {
             if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
                 const blob = await zip.file(filename).async('blob');
@@ -111,12 +105,12 @@
             }
         }
 
-        // Parse Text
         const chatFile = Object.keys(zip.files).find(f => f.toLowerCase().includes('txt'));
         const content = await zip.file(chatFile).async('text');
         const stories = processData(content);
         
         renderNewspaper(stories);
+        document.getElementById('printBtn').style.display = 'block';
     };
 
     function processData(content) {
@@ -128,21 +122,30 @@
             const match = line.match(/\[.*?\]\s*~\s*([^:]+?):\s*(.*)/);
             if (match) {
                 const sender = match[1].trim();
-                const msg = match[2].trim();
+                let msg = match[2].trim();
 
-                // 1. FILTERING LOGIC
-                const isBlacklisted = BLACKLISTED_NAMES.some(name => sender.toLowerCase().includes(name));
-                const isTooShort = msg.length < 25; // Remove "less weight" data
+                // 2. FILTER: Remove deleted/junk messages
+                const isJunk = BLACKLISTED.some(b => 
+                    sender.toLowerCase().includes(b) || 
+                    msg.toLowerCase().includes(b) ||
+                    msg.toLowerCase().includes('deleted')
+                );
 
                 if (msg.match(/🔚|END/i)) {
-                    if (currentStory.text.length > 50) stories.push(currentStory);
+                    if (currentStory.text.length > 30 || currentStory.images.length > 0) {
+                        stories.push(currentStory);
+                    }
                     currentStory = { sender: '', text: '', images: [] };
-                } else if (!isBlacklisted && !isTooShort) {
+                } else if (!isJunk && msg.length > 5) {
                     if (!currentStory.sender) currentStory.sender = sender;
                     
+                    // 3. IMAGE EXTRACTION: Find images in the text
                     const imgMatch = msg.match(/<attached:\s*([^>]+)>/i);
-                    if (imgMatch && imageMap[imgMatch[1].trim()]) {
-                        currentStory.images.push(imageMap[imgMatch[1].trim()]);
+                    if (imgMatch) {
+                        const imgName = imgMatch[1].trim();
+                        if (imageMap[imgName]) {
+                            currentStory.images.push(imageMap[imgName]);
+                        }
                     } else {
                         currentStory.text += msg + " ";
                     }
@@ -156,11 +159,10 @@
         const wrapper = document.getElementById('newspaper-wrapper');
         wrapper.innerHTML = '';
         
-        // We divide stories into chunks to simulate 8-10 pages
-        // Or we let them flow and create new pages based on content height
-        const storiesPerPage = Math.ceil(stories.length / 8); 
+        // Split stories into 8 batches to ensure 8 pages
+        const storiesPerPage = Math.ceil(stories.length / 8);
 
-        for (let i = 0; i < 8; i++) { // Generate at least 8 pages
+        for (let i = 0; i < 8; i++) {
             const page = document.createElement('div');
             page.className = 'newspaper-page';
             
@@ -171,22 +173,21 @@
             let storiesHtml = pageStories.map(s => `
                 <div class="story-block">
                     <div class="story-headline">${s.sender}</div>
-                    ${s.images[0] ? `<img src="${s.images[0]}" class="story-img">` : ''}
-                    <p>${s.text}</p>
+                    ${s.images.map(img => `<img src="${img}" class="story-img">`).join('')}
+                    <div class="text-content">${s.text}</div>
                 </div>
             `).join('');
 
             page.innerHTML = `
                 <div class="newspaper-header">
                     <h1>జనం న్యూస్</h1>
-                    <div class="d-flex justify-content-between border-top border-bottom py-1">
-                        <span>PAGE ${i + 1}</span>
+                    <div class="d-flex justify-content-between border-top border-bottom py-1" style="font-size:0.8rem; font-weight:bold;">
+                        <span>PAGE: ${i + 1}</span>
                         <span>DATE: ${new Date().toLocaleDateString()}</span>
-                        <span>EDITION: MAIN</span>
+                        <span>TELUGU DAILY</span>
                     </div>
                 </div>
                 <div class="content-columns">${storiesHtml}</div>
-                <div class="page-number">${i + 1}</div>
             `;
             wrapper.appendChild(page);
         }
@@ -203,7 +204,7 @@
             if (i > 0) pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
         }
-        pdf.save('janam-news-8pages.pdf');
+        pdf.save('janam-news-edition.pdf');
     };
 </script>
 </body>
