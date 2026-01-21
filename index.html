@@ -174,7 +174,7 @@
 
         function renderStories() {
             const container = document.getElementById('storiesList');
-            container.innerHTML = extractedStories.map((story, index) => `
+            container.innerHTML = extractedStories.map((story, index) => 
                 <div class="story-item">
                     <div class="story-sender">${index + 1}. ${story.sender}</div>
                     <div class="story-text">${story.text.substring(0, 300)}${story.text.length > 300 ? '...' : ''}</div>
@@ -182,7 +182,7 @@
                     <div class="end-marker">🔚 END</div>
                     <small>${story.timestamp} | ${story.text.length} chars | ${story.images.length} images</small>
                 </div>
-            `).join('');
+            ).join('');
         }
 
         function generateNewspaper() {
@@ -191,24 +191,24 @@
 
             // PAGE 1: Top story (longest)
             const topStory = extractedStories[0];
-            html += `
+            html += 
                 <div class="page-hero">
                     <h1>${topStory.sender}</h1>
                     <div style="font-size: 1.4rem; margin: 30px 0;">${topStory.text.substring(0, 400)}...</div>
                     ${topStory.images.slice(0,1).map(img => <img src="${img}" style="width:100%; height:300px; object-fit:cover; border-radius:15px;">).join('')}
                 </div>
-            `;
+            ;
 
             // Multiple stories per page
             extractedStories.slice(1).forEach((story, index) => {
-                html += `
+                html += 
                     <div class="story-card" style="break-inside: avoid; margin-bottom: 30px;">
                         <h3 style="color: #dc2626; margin-bottom: 15px;">${story.sender}</h3>
                         <div style="line-height: 1.8;">${story.text.substring(0, 250)}...</div>
                         ${story.images.slice(0,1).map(img => <img src="${img}" style="width:100%; height:200px; object-fit:cover; border-radius:10px; margin-top:15px;">).join('')}
                         <div style="color: #666; font-size: 0.9rem; margin-top: 10px;">${story.timestamp}</div>
                     </div>
-                `;
+                ;
             });
 
             preview.innerHTML = html;
@@ -248,4 +248,4 @@
         };
     </script>
 </body>
-</html>.
+</html>
