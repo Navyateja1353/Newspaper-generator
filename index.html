@@ -2,7 +2,7 @@
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్ - సంపూర్ణ ఎడిషన్</title>
+<title>జనం న్యూస్ - సమగ్ర ఎడిషన్</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,12 +13,12 @@
 @page { size: A4; margin: 0; }
 
 body {
-    background: #555;
+    background: #444;
     font-family: 'Noto Sans Telugu', sans-serif;
     padding-bottom: 50px;
 }
 
-/* PAGE DESIGN - 4 SIDE BORDER */
+/* PAGE DESIGN */
 .page {
     width: 210mm;
     height: 297mm;
@@ -28,21 +28,22 @@ body {
     position: relative;
     page-break-after: always;
     overflow: hidden;
-    border: 6px double black; 
+    border: 6px double #000; 
 }
 
 /* HEADER */
 .header {
     text-align: center;
-    border-bottom: 3px solid black;
+    border-bottom: 4px solid black;
     margin-bottom: 5mm;
     padding-bottom: 2mm;
 }
 
 .header h1 {
-    font-size: 52px;
+    font-size: 55px;
     font-weight: 800;
     color: #b91c1c;
+    text-shadow: 1px 1px 0px #000;
 }
 
 .header-meta {
@@ -50,58 +51,69 @@ body {
     justify-content: space-between;
     font-weight: bold;
     font-size: 14px;
-    border-top: 1px solid black;
+    border-top: 2px solid black;
     padding: 5px 10px;
+    background: #f1f1f1;
 }
 
-/* STRICT 3 COLUMN LAYOUT - PREVENTS MISSING DATA ON RIGHT */
+/* 3 COLUMN SYSTEM */
 .columns {
     column-count: 3;
     column-gap: 20px;
-    column-rule: 0.5px solid #000;
-    height: calc(297mm - 70mm);
-    width: 100%;
+    column-rule: 1px solid #000;
+    height: calc(297mm - 75mm);
 }
 
 /* ARTICLE BOX */
 .article-box {
     break-inside: avoid;
-    margin-bottom: 18px;
+    margin-bottom: 20px;
     padding: 12px;
     border: 1.5px solid #000; 
     background: #fff;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .article-box h2 {
     font-size: 16px;
     font-weight: 700;
     margin-bottom: 10px;
-    color: #b91c1c;
+    color: #000;
     line-height: 1.4;
-    border-bottom: 2px solid #000;
+    border-bottom: 3px solid #b91c1c;
 }
 
 .article-box img {
     width: 100%;
-    max-height: 250px;
-    object-fit: contain;
-    margin-bottom: 10px; /* Data follows immediately below image */
-    border: 1px solid #ccc;
+    max-height: 220px;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border: 1px solid #000;
 }
 
 .article-box p {
     font-size: 12px;
-    line-height: 1.8; /* Increased to fill space */
+    line-height: 1.8;
     text-align: justify;
     color: #000;
+}
+
+/* FILLER FOR EMPTY SPACE */
+.editorial-filler {
+    break-inside: avoid;
+    background: #f9f9f9;
+    padding: 10px;
+    border: 1px dashed #666;
+    font-size: 11px;
+    margin-top: 10px;
 }
 
 #ui {
     background: #fff;
     padding: 20px;
     text-align: center;
-    border-bottom: 5px solid #b91c1c;
+    border-bottom: 6px solid #b91c1c;
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -118,9 +130,9 @@ body {
 <body>
 
 <div id="ui">
-    <h2 style="color:#b91c1c">జనం న్యూస్ - Full Page Layout</h2>
+    <h2 style="color:#b91c1c">జనం న్యూస్ - Professional 10-Page Print</h2>
     <input type="file" id="zipInput" accept=".zip" class="mt-2">
-    <p style="font-size: 12px; margin-top: 5px;">Images matched to text | 3 Columns | 10 Pages | No Names</p>
+    <p style="font-size: 12px; margin-top: 5px;">Distributed Images | No Names | Space Filling Enabled | 3 Columns</p>
 </div>
 
 <div id="paper"></div>
@@ -136,7 +148,7 @@ zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(file);
     imageMap = {};
     
-    // 1. Map Images
+    // 1. Map Images from ZIP
     for (let f in zip.files) {
         if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
@@ -159,31 +171,28 @@ function parseAndMatch(text) {
     let current = { text: "", image: null };
 
     lines.forEach(line => {
-        // Remove [Date, Time] and Sender Name
+        // Strip out timestamps and sender names automatically
         const match = line.match(/\[.*?\]\s*~?.*?\s*:\s*(.*)/);
         if (!match) return;
 
         let msg = match[1].trim();
 
-        // Remove junk
+        // Skip Deleted/Junk
         if (msg.includes("deleted") || msg.includes("omitted") || msg.length < 5) return;
 
-        // Reset on END marker
-        if (/END|🔚|📩📩🔚/i.test(msg)) {
-            if (current.text.trim().length > 10) {
-                newsItems.push({...current});
-            }
-            current = { text: "", image: null };
-            return;
-        }
-
-        // Match Image to current block
+        // Grouping logic: Handle images and relevant text
         const imgMatch = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (imgMatch) {
             const imgName = imgMatch[1].trim();
-            if (imageMap[imgName]) current.image = imageMap[imgName];
+            if (imageMap[imgName]) {
+                // If current has text, save it before starting new image block
+                if(current.text.length > 20) newsItems.push({...current});
+                current = { text: "", image: imageMap[imgName] };
+            }
+        } else if (/END|🔚|📩📩🔚/i.test(msg)) {
+            if (current.text.trim().length > 10) newsItems.push({...current});
+            current = { text: "", image: null };
         } else {
-            // Add relevant text below the image in the same block
             current.text += msg + " ";
         }
     });
@@ -196,7 +205,7 @@ function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
 
-    // Spread content evenly to fill 10 pages
+    // Spread content across exactly 10 pages
     const perPage = Math.ceil(data.length / TOTAL_PAGES);
     let index = 0;
 
@@ -215,6 +224,7 @@ function render(data) {
                 </div>
             </div>
             <div class="columns"></div>
+            <div style="position:absolute; bottom:15px; left:12mm; font-weight:bold; font-size:12px;">జనం న్యూస్ తెలుగు దినపత్రిక</div>
         `;
 
         const cols = page.querySelector(".columns");
@@ -224,8 +234,7 @@ function render(data) {
             const box = document.createElement("div");
             box.className = "article-box";
             
-            // Headline generated from first few words
-            const headline = item.text.trim().split(" ").slice(0, 7).join(" ") + "...";
+            const headline = item.text.trim().split(" ").slice(0, 6).join(" ") + "...";
 
             box.innerHTML = `
                 <h2>${headline}</h2>
@@ -234,6 +243,15 @@ function render(data) {
             `;
             cols.appendChild(box);
         }
+
+        // FILLER: Add extra editorial space if columns are too empty
+        if (index < data.length * 0.9) {
+            const filler = document.createElement("div");
+            filler.className = "editorial-filler";
+            filler.innerHTML = `<strong>నోట్:</strong> ఈ వార్తలకు సంబంధించిన మరిన్ని వివరాల కోసం మా వెబ్‌సైట్ జనం న్యూస్ డాట్ కామ్ ను సందర్శించండి. మీ ప్రాంతంలోని వార్తలను మాకు పంపండి.`;
+            cols.appendChild(filler);
+        }
+
         paper.appendChild(page);
     }
 }
