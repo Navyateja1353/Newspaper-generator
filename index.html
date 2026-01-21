@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Janam News - Full Archive Edition</title>
+    <title>Janam News - Final Newspaper Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -12,77 +12,69 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;700&display=swap');
 
-        body { font-family: 'Noto Sans Telugu', sans-serif; background: #2c2c2c; padding: 20px; }
+        body { font-family: 'Noto Sans Telugu', sans-serif; background: #1a1a1a; padding: 20px; color: #fff; }
         
-        /* Layout for 10 Pages */
+        /* 10 Page Layout */
         .newspaper-page {
             width: 210mm; 
             min-height: 297mm;
             background: #fff;
             margin: 0 auto 40px auto;
-            padding: 15mm;
-            border: 2px solid #000;
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
-            position: relative;
+            padding: 12mm;
+            border: 3px solid #000;
             color: #000;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
         }
 
         .newspaper-header {
             text-align: center;
-            border-bottom: 6px double #000;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            border-bottom: 5px double #000;
+            margin-bottom: 15px;
         }
 
-        .newspaper-header h1 { font-size: 4.5rem; font-weight: 900; margin: 0; letter-spacing: -2px; }
+        .newspaper-header h1 { font-size: 4rem; font-weight: 900; margin: 0; color: #b91c1c; }
 
         .content-columns {
             column-count: 3;
             column-gap: 20px;
-            column-rule: 1px solid #000;
+            column-rule: 1px solid #ccc;
             text-align: justify;
-            hyphens: auto;
         }
 
-        /* Article Styling */
+        /* Article Styling - Dense format */
         .article {
             display: inline-block;
             width: 100%;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 1px solid #999;
+            border-bottom: 1px solid #ddd;
             break-inside: avoid;
         }
 
         .article-headline {
             font-weight: 700;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: #b91c1c;
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #000;
             line-height: 1.3;
-            background: #fdf2f2;
-            padding: 5px;
-            border-left: 5px solid #b91c1c;
+            text-decoration: underline;
         }
 
-        .image-gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
-            gap: 5px;
-            margin: 10px 0;
+        .img-container {
+            width: 100%;
+            margin-bottom: 8px;
         }
 
         .article-img {
             width: 100%;
             border: 1px solid #000;
-            display: block;
-            object-fit: contain;
+            margin-bottom: 4px;
         }
 
         .article-body {
-            font-size: 0.9rem;
-            line-height: 1.6;
-            word-wrap: break-word;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            white-space: pre-wrap; /* Preserves Telugu line breaks */
         }
 
         #controls {
@@ -90,113 +82,109 @@
             top: 20px;
             left: 20px;
             background: #fff;
-            padding: 25px;
-            border-radius: 12px;
-            z-index: 9999;
-            width: 280px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            color: #000;
+            width: 300px;
         }
     </style>
 </head>
 <body>
 
 <div id="controls">
-    <h4 class="mb-3">📰 Janam Editor</h4>
-    <label class="small text-muted">Upload WhatsApp ZIP</label>
+    <h5>📰 Janam News Editor</h5>
+    <p class="small">Upload your ZIP containing <b>_chat.txt</b> and images.</p>
     <input type="file" id="zipInput" accept=".zip" class="form-control mb-3">
-    <button class="btn btn-danger w-100 py-2" id="printBtn" style="display:none;">
-        <b>Export 10-Page PDF</b>
-    </button>
-    <hr>
-    <div id="status" class="small text-success"></div>
+    <button class="btn btn-danger w-100" id="printBtn" style="display:none;">Export 10-Page PDF</button>
+    <div id="log" class="mt-2 small text-muted"></div>
 </div>
 
 <div id="newspaper-wrapper"></div>
 
 <script>
     let imageMap = {};
-    const JUNK = ['deleted', 'this message was deleted', 'omitted'];
-    const NAMES_TO_HIDE = ['chinni'];
 
     document.getElementById('zipInput').onchange = async (e) => {
         const file = e.target.files[0];
-        if(!file) return;
-        
         const zip = await JSZip.loadAsync(file);
-        document.getElementById('status').innerText = "Processing images...";
-
-        // 1. Map ALL images
+        const log = document.getElementById('log');
+        
+        log.innerText = "Extracting images...";
+        imageMap = {};
         for (const filename of Object.keys(zip.files)) {
             if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
                 const blob = await zip.file(filename).async('blob');
-                imageMap[filename.trim()] = URL.createObjectURL(blob);
+                // Standardize keys (remove spaces/prefixes)
+                const cleanKey = filename.replace(/^.*[\\\/]/, '').trim();
+                imageMap[cleanKey] = URL.createObjectURL(blob);
             }
         }
 
-        // 2. Map Text
-        const chatFile = Object.keys(zip.files).find(f => f.toLowerCase().includes('txt'));
+        log.innerText = "Parsing _chat.txt...";
+        const chatFile = Object.keys(zip.files).find(f => f.includes('_chat.txt'));
         const content = await zip.file(chatFile).async('text');
         
-        document.getElementById('status').innerText = "Grouping stories...";
-        const stories = groupDataBySender(content);
+        const stories = processChatData(content);
+        renderNewspaper(stories);
         
-        renderFullNewspaper(stories);
         document.getElementById('printBtn').style.display = 'block';
-        document.getElementById('status').innerText = "Ready to Print!";
+        log.innerText = "Newspaper Generated!";
     };
 
-    function groupDataBySender(content) {
+    function processChatData(content) {
         const lines = content.split('\n');
-        let storyGroups = {};
+        let groupedBySender = {};
 
         lines.forEach(line => {
+            // Updated Regex to match: [date, time] ~ name: message
             const match = line.match(/\[.*?\]\s*~\s*([^:]+?):\s*(.*)/);
+            
             if (match) {
                 const sender = match[1].trim();
                 let msg = match[2].trim();
 
-                const isBlockedName = NAMES_TO_HIDE.some(n => sender.toLowerCase().includes(n));
-                const isDeleted = JUNK.some(j => msg.toLowerCase().includes(j));
+                // Skip junk
+                if (msg.includes("deleted") || msg.includes("omitted") || sender.toLowerCase().includes("chinni")) return;
 
-                if (!isBlockedName && !isDeleted) {
-                    if (!storyGroups[sender]) {
-                        storyGroups[sender] = { sender: sender, text: "", images: [] };
-                    }
+                if (!groupedBySender[sender]) {
+                    groupedBySender[sender] = { sender: sender, text: "", images: [] };
+                }
 
-                    // Check for image attachment
-                    const imgMatch = msg.match(/<attached:\s*([^>]+)>/i);
-                    if (imgMatch) {
-                        const imgName = imgMatch[1].trim();
-                        if (imageMap[imgName]) {
-                            storyGroups[sender].images.push(imageMap[imgName]);
-                        }
-                    } else if (msg.length > 2) {
-                        // Append ALL text
-                        storyGroups[sender].text += msg + " ";
+                // Check for images like <attached: image.jpg>
+                const imgMatch = msg.match(/<attached:\s*([^>]+)>/i);
+                if (imgMatch) {
+                    const imgName = imgMatch[1].trim();
+                    if (imageMap[imgName]) {
+                        groupedBySender[sender].images.push(imageMap[imgName]);
                     }
+                } else {
+                    // It's text, append it
+                    groupedBySender[sender].text += msg + "\n";
                 }
             }
         });
-        return Object.values(storyGroups);
+        return Object.values(groupedBySender);
     }
 
-    function renderFullNewspaper(stories) {
+    function renderNewspaper(stories) {
         const wrapper = document.getElementById('newspaper-wrapper');
         wrapper.innerHTML = '';
         
-        const totalPages = 10;
-        const storiesPerPage = Math.ceil(stories.length / totalPages);
+        // Spread data across 10 pages
+        const storiesPerPage = Math.ceil(stories.length / 10);
 
-        for (let i = 0; i < totalPages; i++) {
+        for (let i = 0; i < 10; i++) {
             const page = document.createElement('div');
             page.className = 'newspaper-page';
             
-            const pageStories = stories.slice(i * storiesPerPage, (i + 1) * storiesPerPage);
+            const start = i * storiesPerPage;
+            const pageStories = stories.slice(start, start + storiesPerPage);
 
             let storiesHtml = pageStories.map(s => `
                 <div class="article">
                     <div class="article-headline">${s.sender}</div>
-                    <div class="image-gallery">
+                    <div class="img-container">
                         ${s.images.map(img => `<img src="${img}" class="article-img">`).join('')}
                     </div>
                     <div class="article-body">${s.text}</div>
@@ -206,15 +194,13 @@
             page.innerHTML = `
                 <div class="newspaper-header">
                     <h1>జనం న్యూస్</h1>
-                    <div class="d-flex justify-content-between border-top border-bottom py-1" style="font-weight:bold;">
-                        <span>VOLUME: XXIV</span>
+                    <div class="d-flex justify-content-between border-top border-bottom py-1" style="font-size:0.85rem; font-weight:bold;">
+                        <span>స్థాపితం: 2024</span>
                         <span>DATE: ${new Date().toLocaleDateString('te-IN')}</span>
                         <span>PAGE: ${i + 1}</span>
                     </div>
                 </div>
-                <div class="content-columns">
-                    ${storiesHtml || '<div style="text-align:center; padding-top:100px; color:#ccc;">Continued Content...</div>'}
-                </div>
+                <div class="content-columns">${storiesHtml || 'Continued news...'}</div>
             `;
             wrapper.appendChild(page);
         }
@@ -226,12 +212,12 @@
         const pages = document.querySelectorAll('.newspaper-page');
 
         for (let i = 0; i < pages.length; i++) {
-            const canvas = await html2canvas(pages[i], { scale: 1.5, useCORS: true });
+            const canvas = await html2canvas(pages[i], { scale: 1.5 });
             const imgData = canvas.toDataURL('image/png');
             if (i > 0) pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
         }
-        pdf.save('janam-news-full-archive.pdf');
+        pdf.save('janam-news-edition.pdf');
     };
 </script>
 </body>
