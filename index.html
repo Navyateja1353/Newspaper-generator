@@ -20,6 +20,7 @@ body {
     font-family: 'Noto Sans Telugu', sans-serif;
 }
 
+/* PAGE */
 .page {
     width: 210mm;
     height: 297mm;
@@ -31,6 +32,7 @@ body {
     border: 1px solid #000;
 }
 
+/* HEADER */
 .header {
     text-align: center;
     border-bottom: 3px solid black;
@@ -43,12 +45,14 @@ body {
     font-weight: 700;
 }
 
+/* CONTENT */
 .columns {
     column-count: 4;
     column-gap: 10px;
-    height: calc(297mm - 50mm);
+    height: calc(297mm - 55mm);
 }
 
+/* ARTICLE BOX */
 .article {
     break-inside: avoid;
     border: 1px solid #000;
@@ -65,7 +69,7 @@ body {
 
 .article img {
     width: 100%;
-    height: 85px;
+    height: 90px;
     object-fit: cover;
     margin: 4px 0;
     border: 1px solid #000;
@@ -73,10 +77,11 @@ body {
 
 .article p {
     font-size: 11px;
-    line-height: 1.4;
+    line-height: 1.45;
     text-align: justify;
 }
 
+/* UPLOAD */
 #upload {
     background: white;
     padding: 15px;
@@ -84,6 +89,7 @@ body {
     margin: 10px;
 }
 
+/* PRINT */
 @media print {
     body { background: none; }
     #upload { display: none; }
@@ -104,18 +110,12 @@ body {
 <script>
 let imageMap = {};
 let articles = [];
-const MAX_PAGES = 8; // 🔁 change to 10 if required
-
-function isValid(text) {
-    if (!text) return false;
-    if (text.includes("This message was deleted")) return false;
-    if (text.length < 120) return false;
-    return true;
-}
+const MAX_PAGES = 8;   // 🔁 Change to 10 if required
 
 zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(e.target.files[0]);
 
+    imageMap = {};
     for (let f in zip.files) {
         if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
@@ -130,6 +130,15 @@ zipInput.onchange = async e => {
     render();
 };
 
+/* FILTER ONLY IMPORTANT DATA */
+function isValid(text) {
+    if (!text) return false;
+    if (text.includes("This message was deleted")) return false;
+    if (text.length < 120) return false;
+    return true;
+}
+
+/* PARSE CHAT */
 function parseText(text) {
     const lines = text.split("\n");
     let result = [];
@@ -161,21 +170,23 @@ function parseText(text) {
     return result;
 }
 
+/* AUTO TITLE */
 function titleFrom(text) {
-    return text.split(" ").slice(0, 6).join(" ") + "...";
+    return text.split(" ").slice(0, 7).join(" ") + "...";
 }
 
+/* REAL NEWSPAPER PAGE FILL */
 function render() {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
 
-    const perPage = Math.ceil(articles.length / MAX_PAGES);
     let index = 0;
 
     for (let p = 1; p <= MAX_PAGES; p++) {
-        let page = document.createElement("div");
-        page.className = "page";
+        if (index >= articles.length) break;
 
+        const page = document.createElement("div");
+        page.className = "page";
         page.innerHTML = `
             <div class="header">
                 <h1>జనం న్యూస్</h1>
@@ -184,21 +195,30 @@ function render() {
             <div class="columns"></div>
         `;
 
-        let col = page.querySelector(".columns");
-
-        for (let i = 0; i < perPage && index < articles.length; i++, index++) {
-            const a = articles[index];
-            col.innerHTML += `
-                <div class="article">
-                    <h2>${titleFrom(a.text)}</h2>
-                    ${a.image ? `<img src="${a.image}">` : ""}
-                    <p>${a.text.slice(0, 750)}</p>
-                </div>
-            `;
-        }
-
         paper.appendChild(page);
-        if (index >= articles.length) break;
+        const col = page.querySelector(".columns");
+
+        while (index < articles.length) {
+            const a = articles[index];
+
+            const block = document.createElement("div");
+            block.className = "article";
+            block.innerHTML = `
+                <h2>${titleFrom(a.text)}</h2>
+                ${a.image ? `<img src="${a.image}">` : ""}
+                <p>${a.text}</p>
+            `;
+
+            col.appendChild(block);
+
+            /* STOP WHEN PAGE FULL */
+            if (col.scrollHeight > col.clientHeight) {
+                col.removeChild(block);
+                break;
+            }
+
+            index++;
+        }
     }
 }
 </script>
