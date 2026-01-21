@@ -2,7 +2,7 @@
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్ - Exclusive Edition</title>
+<title>జనం న్యూస్ - సంపూర్ణ ఎడిషన్</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
@@ -13,12 +13,12 @@
 @page { size: A4; margin: 0; }
 
 body {
-    background: #222;
+    background: #555;
     font-family: 'Noto Sans Telugu', sans-serif;
     padding-bottom: 50px;
 }
 
-/* PAGE DESIGN WITH DOUBLE BORDER */
+/* PAGE DESIGN - 4 SIDE BORDER */
 .page {
     width: 210mm;
     height: 297mm;
@@ -31,7 +31,7 @@ body {
     border: 6px double black; 
 }
 
-/* HEADER SECTION */
+/* HEADER */
 .header {
     text-align: center;
     border-bottom: 3px solid black;
@@ -40,10 +40,9 @@ body {
 }
 
 .header h1 {
-    font-size: 55px;
+    font-size: 52px;
     font-weight: 800;
     color: #b91c1c;
-    letter-spacing: -1px;
 }
 
 .header-meta {
@@ -52,51 +51,53 @@ body {
     font-weight: bold;
     font-size: 14px;
     border-top: 1px solid black;
-    padding: 4px 10px;
+    padding: 5px 10px;
 }
 
-/* 3 COLUMN SYSTEM */
+/* STRICT 3 COLUMN LAYOUT - PREVENTS MISSING DATA ON RIGHT */
 .columns {
     column-count: 3;
-    column-gap: 15px;
+    column-gap: 20px;
     column-rule: 0.5px solid #000;
-    height: calc(297mm - 65mm);
+    height: calc(297mm - 70mm);
+    width: 100%;
 }
 
-/* BOXED NEWS ITEM (NO NAMES) */
+/* ARTICLE BOX */
 .article-box {
     break-inside: avoid;
-    margin-bottom: 15px;
-    padding: 10px;
+    margin-bottom: 18px;
+    padding: 12px;
     border: 1.5px solid #000; 
     background: #fff;
+    width: 100%;
 }
 
 .article-box h2 {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 8px;
-    color: #000;
+    margin-bottom: 10px;
+    color: #b91c1c;
     line-height: 1.4;
-    border-bottom: 2px solid #b91c1c;
-    padding-bottom: 4px;
+    border-bottom: 2px solid #000;
 }
 
 .article-box img {
     width: 100%;
-    max-height: 200px;
+    max-height: 250px;
     object-fit: contain;
-    margin: 8px 0;
-    border: 1px solid #ddd;
+    margin-bottom: 10px; /* Data follows immediately below image */
+    border: 1px solid #ccc;
 }
 
 .article-box p {
-    font-size: 11px;
-    line-height: 1.6;
+    font-size: 12px;
+    line-height: 1.8; /* Increased to fill space */
     text-align: justify;
+    color: #000;
 }
 
-#control-panel {
+#ui {
     background: #fff;
     padding: 20px;
     text-align: center;
@@ -108,7 +109,7 @@ body {
 
 @media print {
     body { background: none; padding: 0; }
-    #control-panel { display: none; }
+    #ui { display: none; }
     .page { margin: 0; border: 6px double black !important; }
 }
 </style>
@@ -116,17 +117,17 @@ body {
 
 <body>
 
-<div id="control-panel">
-    <h2 style="color:#b91c1c">జనం న్యూస్ - పేపర్ జనరేటర్</h2>
+<div id="ui">
+    <h2 style="color:#b91c1c">జనం న్యూస్ - Full Page Layout</h2>
     <input type="file" id="zipInput" accept=".zip" class="mt-2">
-    <p style="font-size: 12px; margin-top: 5px;">Names removed | No Junk | 3 Columns | 10 Pages</p>
+    <p style="font-size: 12px; margin-top: 5px;">Images matched to text | 3 Columns | 10 Pages | No Names</p>
 </div>
 
 <div id="paper"></div>
 
 <script>
 let imageMap = {};
-const MAX_PAGES = 10;
+const TOTAL_PAGES = 10;
 
 zipInput.onchange = async e => {
     const file = e.target.files[0];
@@ -135,7 +136,7 @@ zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(file);
     imageMap = {};
     
-    // 1. Extract Images
+    // 1. Map Images
     for (let f in zip.files) {
         if (f.match(/\.(jpg|jpeg|png)$/i)) {
             const blob = await zip.file(f).async("blob");
@@ -144,71 +145,71 @@ zipInput.onchange = async e => {
         }
     }
 
-    // 2. Extract and Parse Text
+    // 2. Parse Text
     const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
     const text = await zip.file(txtFile).async("text");
 
-    const newsData = parseCleanText(text);
-    renderNewspaper(newsData);
+    const newsItems = parseAndMatch(text);
+    render(newsItems);
 };
 
-function parseCleanText(text) {
+function parseAndMatch(text) {
     const lines = text.split("\n");
     let newsItems = [];
-    let currentNews = { text: "", image: null };
+    let current = { text: "", image: null };
 
     lines.forEach(line => {
-        // Regex to remove the [Date, Time] ~ Sender Name: part
+        // Remove [Date, Time] and Sender Name
         const match = line.match(/\[.*?\]\s*~?.*?\s*:\s*(.*)/);
         if (!match) return;
 
-        let msgBody = match[1].trim();
+        let msg = match[1].trim();
 
-        // Filter out junk
-        if (msgBody.includes("deleted") || msgBody.includes("omitted") || msgBody.length < 5) return;
+        // Remove junk
+        if (msg.includes("deleted") || msg.includes("omitted") || msg.length < 5) return;
 
-        // Check for END markers to start a new box
-        if (/END|🔚|📩📩🔚/i.test(msgBody)) {
-            if (currentNews.text.trim().length > 20) {
-                newsItems.push({...currentNews});
+        // Reset on END marker
+        if (/END|🔚|📩📩🔚/i.test(msg)) {
+            if (current.text.trim().length > 10) {
+                newsItems.push({...current});
             }
-            currentNews = { text: "", image: null };
+            current = { text: "", image: null };
             return;
         }
 
-        // Image check
-        const imgMatch = msgBody.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
+        // Match Image to current block
+        const imgMatch = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (imgMatch) {
             const imgName = imgMatch[1].trim();
-            if (imageMap[imgName]) currentNews.image = imageMap[imgName];
+            if (imageMap[imgName]) current.image = imageMap[imgName];
         } else {
-            // Content collection (Sender name is already removed by regex)
-            currentNews.text += msgBody + " ";
+            // Add relevant text below the image in the same block
+            current.text += msg + " ";
         }
     });
 
-    if (currentNews.text.trim().length > 20) newsItems.push(currentNews);
+    if (current.text.trim().length > 10) newsItems.push(current);
     return newsItems;
 }
 
-function renderNewspaper(data) {
+function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
 
-    const perPage = Math.ceil(data.length / MAX_PAGES);
-    let currentIdx = 0;
+    // Spread content evenly to fill 10 pages
+    const perPage = Math.ceil(data.length / TOTAL_PAGES);
+    let index = 0;
 
-    for (let p = 1; p <= MAX_PAGES; p++) {
-        if (currentIdx >= data.length) break;
+    for (let p = 1; p <= TOTAL_PAGES; p++) {
+        if (index >= data.length) break;
 
-        const pageDiv = document.createElement("div");
-        pageDiv.className = "page";
-
-        pageDiv.innerHTML = `
+        const page = document.createElement("div");
+        page.className = "page";
+        page.innerHTML = `
             <div class="header">
                 <h1>జనం న్యూస్</h1>
                 <div class="header-meta">
-                    <span>తెలుగు దినపత్రిక</span>
+                    <span>నిజాయితీ గల వార్తలు</span>
                     <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
                     <span>పేజీ: ${p}</span>
                 </div>
@@ -216,25 +217,24 @@ function renderNewspaper(data) {
             <div class="columns"></div>
         `;
 
-        const columnDiv = pageDiv.querySelector(".columns");
+        const cols = page.querySelector(".columns");
 
-        for (let i = 0; i < perPage && currentIdx < data.length; i++, currentIdx++) {
-            const item = data[currentIdx];
-            const articleBox = document.createElement("div");
-            articleBox.className = "article-box";
+        for (let i = 0; i < perPage && index < data.length; i++, index++) {
+            const item = data[index];
+            const box = document.createElement("div");
+            box.className = "article-box";
             
-            // Headline is automatically picked from news starting
-            const headline = item.text.trim().split(" ").slice(0, 6).join(" ") + "...";
+            // Headline generated from first few words
+            const headline = item.text.trim().split(" ").slice(0, 7).join(" ") + "...";
 
-            articleBox.innerHTML = `
+            box.innerHTML = `
                 <h2>${headline}</h2>
                 ${item.image ? `<img src="${item.image}">` : ""}
                 <p>${item.text}</p>
             `;
-            columnDiv.appendChild(articleBox);
+            cols.appendChild(box);
         }
-
-        paper.appendChild(pageDiv);
+        paper.appendChild(page);
     }
 }
 </script>
