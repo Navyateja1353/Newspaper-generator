@@ -1,227 +1,213 @@
 <!DOCTYPE html>
 <html lang="te">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Janam News - Professional 10 Page Layout</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;700&display=swap');
+<meta charset="UTF-8">
+<title>జనం న్యూస్</title>
 
-        body { font-family: 'Noto Sans Telugu', sans-serif; background: #222; padding: 20px; }
-        
-        /* 10-Page BroadSheet Style */
-        .newspaper-page {
-            width: 210mm; 
-            min-height: 297mm;
-            background: #fff;
-            margin: 0 auto 40px auto;
-            padding: 15mm;
-            border: 2px solid #000;
-            color: #000;
-            box-shadow: 0 0 40px rgba(0,0,0,0.6);
-            position: relative;
-        }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
-        .newspaper-header {
-            text-align: center;
-            border-bottom: 5px double #000;
-            margin-bottom: 15px;
-        }
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .newspaper-header h1 { font-size: 4.5rem; font-weight: 900; margin: 0; color: #b91c1c; }
+/* ✅ PRINT MARGINS FOR ALL 8 PAGES */
+@page {
+    size: A4;
+    margin: 12mm;
+}
 
-        /* STRICT 3 COLUMNS */
-        .content-columns {
-            column-count: 3;
-            column-gap: 20px;
-            column-rule: 1px solid #000;
-            text-align: justify;
-        }
+body {
+    background: #ccc;
+    font-family: 'Noto Sans Telugu', sans-serif;
+}
 
-        .article {
-            display: inline-block;
-            width: 100%;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #444;
-            break-inside: avoid;
-        }
+/* PAGE */
+.page {
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    margin: 10mm auto;
+    padding: 12mm;          /* inner margin */
+    page-break-after: always;
+    overflow: hidden;
+}
 
-        .article-headline {
-            font-weight: 700;
-            font-size: 1.15rem;
-            margin-bottom: 8px;
-            color: #000;
-            line-height: 1.3;
-            text-transform: uppercase;
-            border-bottom: 2px solid #b91c1c;
-        }
+/* HEADER */
+.header {
+    text-align: center;
+    border-bottom: 3px solid black;
+    margin-bottom: 6mm;
+}
 
-        .image-gallery {
-            width: 100%;
-            margin: 10px 0;
-        }
+.header h1 {
+    font-size: 34px;
+    font-weight: 700;
+}
 
-        .article-img {
-            width: 100%;
-            border: 0.5px solid #000;
-            margin-bottom: 5px;
-            object-fit: cover;
-        }
+/* CONTENT */
+.columns {
+    column-count: 4;
+    column-gap: 10px;
+    height: calc(297mm - 40mm);
+}
 
-        .article-body {
-            font-size: 0.9rem;
-            line-height: 1.6;
-            white-space: pre-line;
-        }
+/* ARTICLE */
+.article {
+    break-inside: avoid;
+    margin-bottom: 6px;
+}
 
-        #controls {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            z-index: 10000;
-            width: 300px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            color: #000;
-        }
-    </style>
+.article h2 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.article img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    margin: 3px 0;
+}
+
+.article p {
+    font-size: 11px;
+    line-height: 1.4;
+    text-align: justify;
+}
+
+/* UPLOAD */
+#upload {
+    background: white;
+    padding: 15px;
+    text-align: center;
+    margin: 10px;
+}
+
+/* ✅ PRINT FIX (CRITICAL) */
+@media print {
+    body { background: none; }
+
+    #upload { display: none; }
+
+    .page {
+        margin: 0 auto;   /* avoid double margins */
+    }
+}
+</style>
 </head>
+
 <body>
 
-<div id="controls">
-    <h4>📰 Janam News</h4>
-    <p class="small">Processing <b>_chat.txt</b> into 10 pages.</p>
-    <input type="file" id="zipInput" accept=".zip" class="form-control mb-3">
-    <button class="btn btn-danger w-100" id="printBtn" style="display:none;">Export 10-Page PDF</button>
-    <div id="status" class="mt-2 small text-primary"></div>
+<div id="upload">
+    <h3>ZIP Upload (chat.txt + images)</h3>
+    <input type="file" id="zipInput" accept=".zip">
 </div>
 
-<div id="newspaper-wrapper"></div>
+<div id="paper"></div>
 
 <script>
-    let imageMap = {};
-    const JUNK = ["This message was deleted", "Messages and calls are end-to-end encrypted", "created this group", "END", "📩📩🔚"];
+let imageMap = {};
+let articles = [];
+const MAX_PAGES = 8;
 
-    document.getElementById('zipInput').onchange = async (e) => {
-        const file = e.target.files[0];
-        const zip = await JSZip.loadAsync(file);
-        const status = document.getElementById('status');
-        
-        status.innerText = "Processing images...";
-        imageMap = {};
-        for (const filename of Object.keys(zip.files)) {
-            if (filename.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                const blob = await zip.file(filename).async('blob');
-                const cleanName = filename.split('/').pop().trim();
-                imageMap[cleanName] = URL.createObjectURL(blob);
-            }
+zipInput.onchange = async e => {
+    const zip = await JSZip.loadAsync(e.target.files[0]);
+
+    imageMap = {};
+    for (let f in zip.files) {
+        if (f.match(/\.(jpg|jpeg|png)$/i)) {
+            const blob = await zip.file(f).async("blob");
+            imageMap[f] = URL.createObjectURL(blob);
         }
-
-        status.innerText = "Cleaning and Merging Data...";
-        const chatFile = Object.keys(zip.files).find(f => f.includes('_chat.txt'));
-        const content = await zip.file(chatFile).async('text');
-        
-        const stories = groupAndCleanData(content);
-        renderPaper(stories);
-        
-        document.getElementById('printBtn').style.display = 'block';
-        status.innerText = "Success! Ready to Print.";
-    };
-
-    function groupAndCleanData(content) {
-        const lines = content.split('\n');
-        let grouped = {};
-
-        lines.forEach(line => {
-            // Regex for your specific format: [date, time] ~ name: message
-            const match = line.match(/\[.*?\]\s*~\s*([^:]+?):\s*(.*)/);
-            
-            if (match) {
-                const sender = match[1].trim();
-                let msg = match[2].trim();
-
-                // 1. FILTER: Skip "END" and deleted messages
-                const isJunk = JUNK.some(j => msg.includes(j) || sender.includes(j));
-                if (isJunk) return;
-
-                if (!grouped[sender]) {
-                    grouped[sender] = { sender: sender, text: "", images: [] };
-                }
-
-                // 2. IMAGE DETECTION
-                const imgMatch = msg.match(/<attached:\s*([^>]+)>/i);
-                if (imgMatch) {
-                    const imgName = imgMatch[1].trim();
-                    if (imageMap[imgName]) grouped[sender].images.push(imageMap[imgName]);
-                } else {
-                    // 3. TEXT MERGING: Group everything by sender
-                    grouped[sender].text += msg + "\n";
-                }
-            }
-        });
-        return Object.values(grouped);
     }
 
-    function renderPaper(stories) {
-        const wrapper = document.getElementById('newspaper-wrapper');
-        wrapper.innerHTML = '';
-        
-        const totalPages = 10;
-        const storiesPerPage = Math.ceil(stories.length / totalPages);
+    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const text = await zip.file(txtFile).async("text");
 
-        for (let i = 0; i < totalPages; i++) {
-            const page = document.createElement('div');
-            page.className = 'newspaper-page';
-            
-            const pageStories = stories.slice(i * storiesPerPage, (i + 1) * storiesPerPage);
+    articles = parseText(text);
+    render();
+};
 
-            let pageContent = pageStories.map(s => `
+function isValid(text) {
+    if (!text) return false;
+    if (text.includes("This message was deleted")) return false;
+    if (text.length < 40) return false;
+    return true;
+}
+
+function parseText(text) {
+    const lines = text.split("\n");
+    let result = [];
+    let current = { text: "", image: null };
+
+    lines.forEach(line => {
+        const m = line.match(/\[(.*?)\]\s*~.*?:\s*(.*)/);
+        if (!m) return;
+
+        let msg = m[2];
+
+        if (/END|🔚/i.test(msg)) {
+            if (isValid(current.text)) result.push(current);
+            current = { text: "", image: null };
+            return;
+        }
+
+        if (!isValid(msg)) return;
+
+        const img = msg.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
+        if (img && imageMap[img[1]]) {
+            current.image = imageMap[img[1]];
+        } else {
+            current.text += msg + " ";
+        }
+    });
+
+    if (isValid(current.text)) result.push(current);
+    return result;
+}
+
+function titleFrom(text) {
+    return text.split(" ").slice(0, 8).join(" ") + "...";
+}
+
+function render() {
+    let paper = document.getElementById("paper");
+    paper.innerHTML = "";
+
+    let perPage = Math.ceil(articles.length / MAX_PAGES);
+    let index = 0;
+
+    for (let p = 1; p <= MAX_PAGES; p++) {
+        let page = document.createElement("div");
+        page.className = "page";
+
+        page.innerHTML = `
+            <div class="header">
+                <h1>జనం న్యూస్</h1>
+                <small>Page ${p}</small>
+            </div>
+            <div class="columns"></div>
+        `;
+
+        let col = page.querySelector(".columns");
+
+        for (let i = 0; i < perPage && index < articles.length; i++, index++) {
+            let a = articles[index];
+            col.innerHTML += `
                 <div class="article">
-                    <div class="article-headline">${s.sender}</div>
-                    <div class="image-gallery">
-                        ${s.images.map(img => `<img src="${img}" class="article-img">`).join('')}
-                    </div>
-                    <div class="article-body">${s.text}</div>
+                    <h2>${titleFrom(a.text)}</h2>
+                    ${a.image ? `<img src="${a.image}">` : ""}
+                    <p>${a.text.slice(0, 900)}</p>
                 </div>
-            `).join('');
-
-            page.innerHTML = `
-                <div class="newspaper-header">
-                    <h1>జనం న్యూస్</h1>
-                    <div class="d-flex justify-content-between border-top border-bottom py-1" style="font-weight:bold; font-size:0.9rem;">
-                        <span>VOLUME: XXIV</span>
-                        <span>DATE: ${new Date().toLocaleDateString('te-IN')}</span>
-                        <span>DAILY EDITION</span>
-                    </div>
-                </div>
-                <div class="content-columns">${pageContent || 'News continued...'}</div>
-                <div style="position:absolute; bottom:15px; right:30px; font-weight:bold;">Page ${i + 1}</div>
             `;
-            wrapper.appendChild(page);
         }
+
+        paper.appendChild(page);
+        if (index >= articles.length) break;
     }
-
-    document.getElementById('printBtn').onclick = async () => {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pages = document.querySelectorAll('.newspaper-page');
-
-        for (let i = 0; i < pages.length; i++) {
-            const canvas = await html2canvas(pages[i], { scale: 1.5, useCORS: true });
-            const imgData = canvas.toDataURL('image/png');
-            if (i > 0) pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-        }
-        pdf.save('janam-news-10pages.pdf');
-    };
+}
 </script>
+
 </body>
 </html>
