@@ -1,263 +1,115 @@
-
 <!DOCTYPE html>
-<html lang="te">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్ - పూర్తి వార్తల ఎడిషన్</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
+<title>AI Newspaper</title>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-@page { size: A4; margin: 0; }
-
 body {
-    background: #222;
-    font-family: 'Noto Sans Telugu', sans-serif;
-    padding-bottom: 50px;
+    margin: 20px;
+    font-family: "Times New Roman", serif;
+    background: #f5f5f5;
 }
 
-#ui {
-    background: white;
-    padding: 20px;
-    text-align: center;
-    border-bottom: 5px solid #b91c1c;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.page {
-    width: 210mm;
-    min-height: 297mm;
-    background: white;
-    margin: 10mm auto;
-    padding: 12mm;
-    border: 6px double black;
-    page-break-after: always;
-}
-
-.header {
-    text-align: center;
-    border-bottom: 3px solid black;
-    margin-bottom: 5mm;
-}
-
-.header h1 {
-    font-size: 48px;
-    color: #b91c1c;
-    font-weight: 800;
-}
-
-.header-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    font-weight: bold;
-    border-top: 1px solid black;
-    padding: 5px 10px;
-}
-
-.category-ribbon {
-    background: #b91c1c;
-    color: white;
-    padding: 4px 12px;
-    font-size: 13px;
-    font-weight: bold;
-    display: inline-block;
-    margin-bottom: 5px;
-}
-
-.columns {
+.newspaper {
     column-count: 3;
-    column-gap: 15px;
-    column-rule: 0.5px solid #ccc;
+    column-gap: 30px;
+}
+
+.article {
+    break-inside: avoid;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.category {
+    font-size: 12px;
+    font-weight: bold;
+    color: #b00000;
+    text-transform: uppercase;
+}
+
+.title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 5px 0;
+}
+
+.content {
+    font-size: 14px;
     text-align: justify;
 }
 
-.news-box {
-    border: 1px solid black;
-    padding: 8px;
-    margin-bottom: 15px;
-    break-inside: avoid-column;
-}
-
-.news-box h2 {
-    font-size: 15px;
-    margin-bottom: 6px;
-    border-bottom: 2px solid #b91c1c;
-}
-
-.news-box img {
+.article img {
     width: 100%;
-    max-height: 240px;
-    object-fit: contain;
-    margin-bottom: 8px;
-    border: 1px solid #ddd;
-}
-
-.news-box p {
-    font-size: 11.5px;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div id="ui">
-    <h2>📰 జనం న్యూస్ - Full Newspaper Generator</h2>
-    <input type="file" id="zipInput" accept=".zip">
-    <p>Politics | Sports | Movies | Technology | Education | Agriculture | Crime</p>
-</div>
+<h1 style="text-align:center;">AI Generated Newspaper</h1>
 
-<div id="paper"></div>
+<div class="newspaper" id="news"></div>
 
 <script>
-let imageMap = {};
+const rawData = [
+{
+category: "Politics",
+text: `
+[22/01/26, 9:14:11 AM] Shobha: image omitted
+స‌మ‌న్వ‌యంతో ఐఎఫ్ఆర్, రాష్ట్రప‌తి ప‌ర్య‌ట‌న‌ను విజ‌య‌వంతం చేద్దాం
+ఏర్పాట్లపై సమీక్షలో జిల్లా కలెక్టర్ ఎం.ఎన్. హరేంధిర ప్రసాద్
+End
+`,
+image: "images/img1.jpg"
+},
+{
+category: "Technology",
+text: `
+[22/01/26, 10:30 AM] Ravi: image omitted
+AI is transforming education and healthcare across India rapidly.
+End
+`,
+image: "images/img2.jpg"
+}
+];
 
-/* CATEGORY KEYWORDS */
-const categories = {
-    "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "మంత్రి", "ముఖ్యమంత్రి", "పార్టీ"],
-    "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం"],
-    "సినిమా": ["సినిమా", "నటుడు", "నటి", "దర్శకుడు", "ట్రైలర్"],
-    "సాంకేతికం": ["టెక్నాలజీ", "మొబైల్", "సాఫ్ట్‌వేర్", "AI", "స్టార్ట్‌అప్"],
-    "విద్య": ["విద్య", "విద్యార్థులు", "స్కూల్", "కాలేజీ", "పరీక్ష"],
-    "వ్యవసాయం": ["రైతు", "పంట", "విత్తనాలు", "వరి", "పత్తి"],
-    "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "హత్య", "దోపిడీ"]
-};
-
-/* LOAD ZIP */
-zipInput.onchange = async e => {
-    const zip = await JSZip.loadAsync(e.target.files[0]);
-    imageMap = {};
-
-    for (let f in zip.files) {
-        if (/\.(jpg|jpeg|png)$/i.test(f)) {
-            const blob = await zip.file(f).async("blob");
-            imageMap[f.split('/').pop()] = URL.createObjectURL(blob);
-        }
-    }
-
-    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
-    const text = await zip.file(txtFile).async("text");
-
-    render(parseArticles(text));
-};
-
-/* CLEAN + PARSE TEXT */
-function parseArticles(text) {
-    const lines = text.split(/\r?\n/);
-    let articles = [];
-    let current = { body: "", image: null, category: "సాధారణం" };
-
-    const push = () => {
-        const clean = current.body.trim().replace(/\n{2,}/g, "\n");
-        if (clean.length > 40) {
-            articles.push({ ...current, body: clean });
-        }
-        current = { body: "", image: null, category: "సాధారణం" };
-    };
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        /* REMOVE image omitted */
-        if (/image omitted/i.test(line)) return;
-
-        /* REMOVE End */
-        if (/^end$/i.test(line)) return;
-
-        /* REAL IMAGE */
-        const img = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
-        if (img) {
-            current.image = imageMap[img[1].trim()] || null;
-            return;
-        }
-
-        /* REMOVE timestamp + sender */
-        line = line.replace(/^\[[^\]]+\]\s*[^:]+:\s*/, "");
-
-        if (!line) return;
-
-        /* AUTO ARTICLE SPLIT */
-        if (line.length < 80 && current.body.length > 250) {
-            push();
-        }
-
-        current.body += line + "\n";
-
-        /* CATEGORY */
-        for (let cat in categories) {
-            if (categories[cat].some(k => line.includes(k))) {
-                current.category = cat;
-            }
-        }
-    });
-
-    push();
-    return articles;
+function cleanText(text) {
+    return text
+        .replace(/\[.*?\]/g, '')
+        .replace(/.*?:/g, '')
+        .replace(/image omitted/gi, '')
+        .replace(/End/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
-/* TITLE FROM CONTENT */
 function generateTitle(text) {
-    const line = text.split("\n").find(l => l.length > 20);
-    return line ? line.substring(0, 70) : "ప్రధాన వార్త";
+    const words = text.split(" ");
+    return words.slice(0, 6).join(" ") + "...";
 }
 
-/* RENDER NEWSPAPER */
-function render(data) {
-    const paper = document.getElementById("paper");
-    paper.innerHTML = "";
+const container = document.getElementById("news");
 
-    const grouped = {};
-    data.forEach(a => {
-        if (!grouped[a.category]) grouped[a.category] = [];
-        grouped[a.category].push(a);
-    });
+rawData.forEach(item => {
+    const clean = cleanText(item.text);
+    if (clean.length < 30) return;
 
-    let pageNo = 1;
+    const article = document.createElement("div");
+    article.className = "article";
 
-    for (let cat in grouped) {
-        for (let i = 0; i < grouped[cat].length; i += 6) {
-            const page = document.createElement("div");
-            page.className = "page";
+    article.innerHTML = `
+        <div class="category">${item.category}</div>
+        <div class="title">${generateTitle(clean)}</div>
+        <div class="content">${clean}</div>
+        ${item.image ? `<img src="${item.image}">` : ""}
+    `;
 
-            page.innerHTML = `
-                <div class="header">
-                    <div class="category-ribbon">${cat}</div>
-                    <h1>జనం న్యూస్</h1>
-                    <div class="header-meta">
-                        <span>VOLUME: 01</span>
-                        <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
-                        <span>పేజీ: ${pageNo++}</span>
-                    </div>
-                </div>
-                <div class="columns"></div>
-            `;
-
-            const col = page.querySelector(".columns");
-
-            grouped[cat].slice(i, i + 6).forEach(item => {
-                const box = document.createElement("div");
-                box.className = "news-box";
-
-                box.innerHTML = `
-                    <h2>${generateTitle(item.body)}</h2>
-                    ${item.image ? `<img src="${item.image}">` : ""}
-                    <p>${item.body}</p>
-                `;
-                col.appendChild(box);
-            });
-
-            paper.appendChild(page);
-        }
-    }
-}
+    container.appendChild(article);
+});
 </script>
 
 </body>
