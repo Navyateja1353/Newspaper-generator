@@ -110,7 +110,7 @@ body {
 <div id="ui">
     <h2>📰 జనం న్యూస్ - Full Newspaper Generator</h2>
     <input type="file" id="zipInput" accept=".zip">
-    <p>Categories: Politics | Sports | Movies | Technology | Education | Agriculture | Crime</p>
+    <p>Politics | Sports | Movies | Technology | Education | Agriculture | Crime</p>
 </div>
 
 <div id="paper"></div>
@@ -118,7 +118,6 @@ body {
 <script>
 let imageMap = {};
 
-/* CATEGORY KEYWORDS */
 const categories = {
     "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "మంత్రి", "ముఖ్యమంత్రి", "పార్టీ"],
     "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం"],
@@ -146,39 +145,38 @@ zipInput.onchange = async e => {
     render(parseArticles(text));
 };
 
-/* PARSER – NO END, NO SENDER */
+/* PARSE – NO SENDER, NO END */
 function parseArticles(text) {
     const lines = text.split(/\r?\n/);
     let articles = [];
-    let current = { text: "", image: null, category: "సాధారణం" };
+    let current = { body: "", image: null, category: "సాధారణం" };
 
     const push = () => {
-        if (current.text.trim().length > 25) {
+        if (current.body.trim().length > 50) {
             articles.push({ ...current });
         }
-        current = { text: "", image: null, category: "సాధారణం" };
+        current = { body: "", image: null, category: "సాధారణం" };
     };
 
     lines.forEach(line => {
         line = line.trim();
         if (!line) return;
 
-        /* Image */
         const img = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (img) {
             current.image = imageMap[img[1].trim()] || null;
             return;
         }
 
-        /* Remove timestamp & sender completely */
+        // REMOVE timestamp & sender completely
         const clean = line.replace(/^\[.*?\]\s*.*?:\s*/, "");
 
-        /* New article if headline-like line */
-        if (clean.length < 80 && current.text.length > 200) {
+        // New article detection
+        if (clean.length < 80 && current.body.length > 250) {
             push();
         }
 
-        current.text += clean + "\n";
+        current.body += clean + "\n";
 
         for (let cat in categories) {
             if (categories[cat].some(k => clean.includes(k))) {
@@ -191,7 +189,13 @@ function parseArticles(text) {
     return articles;
 }
 
-/* RENDER – STRICT 3 COLUMNS */
+/* TITLE FROM CONTENT */
+function generateTitle(text) {
+    const line = text.split("\n").find(l => l.length > 20);
+    return line ? line.substring(0, 70) : "ప్రధాన వార్త";
+}
+
+/* RENDER – 3 COLUMNS */
 function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
@@ -227,12 +231,11 @@ function render(data) {
             grouped[cat].slice(i, i + 6).forEach(item => {
                 const box = document.createElement("div");
                 box.className = "news-box";
-                const headline = item.text.split("\n")[0];
 
                 box.innerHTML = `
-                    <h2>${headline}</h2>
+                    <h2>${generateTitle(item.body)}</h2>
                     ${item.image ? `<img src="${item.image}">` : ""}
-                    <p>${item.text}</p>
+                    <p>${item.body}</p>
                 `;
                 col.appendChild(box);
             });
