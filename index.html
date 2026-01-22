@@ -1,106 +1,89 @@
+
 <!DOCTYPE html>
 <html lang="te">
 <head>
 <meta charset="UTF-8">
-<title>జనం న్యూస్ - పూర్తి వార్తల ఎడిషన్</title>
+<title>జనం న్యూస్</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
 @page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
 
 body {
-    background: #222;
+    margin: 0;
+    background: #333;
     font-family: 'Noto Sans Telugu', sans-serif;
 }
 
-#ui {
+#controls {
     background: white;
-    padding: 15px;
+    padding: 12px;
     text-align: center;
-    border-bottom: 5px solid #b91c1c;
     position: sticky;
     top: 0;
-    z-index: 100;
-}
-
-.page-container {
-    display: flex;
-    justify-content: center;
+    z-index: 10;
 }
 
 .page {
     width: 210mm;
     height: 297mm;
     background: white;
-    margin: 10mm;
+    margin: 15px auto;
     padding: 12mm;
     border: 6px double black;
-    overflow: hidden;
 }
 
 .header {
     text-align: center;
     border-bottom: 3px solid black;
-    margin-bottom: 5mm;
+    margin-bottom: 6mm;
 }
 
 .header h1 {
-    font-size: 48px;
+    font-size: 46px;
     color: #b91c1c;
-    font-weight: 800;
 }
 
-.header-meta {
+.meta {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     border-top: 1px solid black;
-    padding: 5px 10px;
-}
-
-.category-ribbon {
-    background: #b91c1c;
-    color: white;
-    padding: 4px 12px;
-    font-size: 13px;
-    font-weight: bold;
-    display: inline-block;
-    margin-bottom: 5px;
+    padding: 4px 8px;
 }
 
 .columns {
     column-count: 3;
-    column-gap: 15px;
-    column-rule: 0.5px solid #ccc;
-    height: calc(297mm - 90mm);
-    text-align: justify;
+    column-gap: 14px;
+    column-rule: 0.5px solid #aaa;
+    height: 230mm;
 }
 
-.news-box {
+.article {
+    break-inside: avoid;
     border: 1px solid black;
-    padding: 8px;
-    margin-bottom: 15px;
-    break-inside: avoid-column;
+    padding: 7px;
+    margin-bottom: 12px;
 }
 
-.news-box h2 {
-    font-size: 15px;
-    margin-bottom: 6px;
+.article h2 {
+    font-size: 14px;
     border-bottom: 2px solid #b91c1c;
+    margin-bottom: 5px;
 }
 
-.news-box img {
+.article img {
     width: 100%;
-    max-height: 220px;
+    max-height: 200px;
     object-fit: contain;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 }
 
-.news-box p {
+.article p {
     font-size: 11.5px;
     line-height: 1.6;
     white-space: pre-wrap;
@@ -110,25 +93,17 @@ body {
     text-align: center;
     margin: 10px;
 }
-
-.nav button {
-    padding: 6px 12px;
-    font-size: 14px;
-}
 </style>
 </head>
 
 <body>
 
-<div id="ui">
-    <h2>📰 జనం న్యూస్ - Full Newspaper Generator</h2>
-    <input type="file" id="zipInput" accept=".zip"><br><br>
-    <span id="pageInfo">Page 1</span>
+<div id="controls">
+    <input type="file" id="zipInput" accept=".zip">
+    <div id="pageInfo"></div>
 </div>
 
-<div class="page-container">
-    <div id="paper"></div>
-</div>
+<div id="viewer"></div>
 
 <div class="nav">
     <button onclick="prevPage()">⬅ Prev</button>
@@ -136,108 +111,112 @@ body {
 </div>
 
 <script>
-let imageMap = {};
 let pages = [];
 let currentPage = 0;
-
-const categories = {
-    "రాజకీయం": ["ప్రభుత్వం","మంత్రి","ఎన్నికలు"],
-    "క్రీడలు": ["క్రికెట్","మ్యాచ్"],
-    "సినిమా": ["సినిమా","నటుడు"],
-    "సాంకేతికం": ["టెక్నాలజీ","AI"],
-    "విద్య": ["విద్య","పరీక్ష"],
-    "వ్యవసాయం": ["రైతు","పంట"],
-    "నేరాలు": ["పోలీస్","కేసు"]
-};
+let imageMap = {};
 
 zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(e.target.files[0]);
-    imageMap = {};
 
-    for (let f in zip.files) {
-        if (/\.(jpg|jpeg|png)$/i.test(f)) {
+    imageMap = {};
+    for (const f in zip.files) {
+        if (/\.(jpg|png|jpeg)$/i.test(f)) {
             const blob = await zip.file(f).async("blob");
-            imageMap[f.split('/').pop()] = URL.createObjectURL(blob);
+            imageMap[f.split("/").pop()] = URL.createObjectURL(blob);
         }
     }
 
-    const txt = await zip.file(Object.keys(zip.files).find(f=>f.endsWith(".txt"))).async("text");
-    buildPages(parseArticles(txt));
+    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const text = await zip.file(txtFile).async("text");
+
+    const articles = parseText(text);
+    createPages(articles);
     showPage(0);
 };
 
-function parseArticles(text) {
+function parseText(text) {
     const lines = text.split(/\r?\n/);
-    let articles = [], current = { body:"", image:null, category:"సాధారణం" };
+    let articles = [];
+    let buffer = "";
+    let img = null;
 
-    const push=()=>{
-        if(current.body.trim().length>60)
-            articles.push({...current, body:current.body.trim()});
-        current={ body:"", image:null, category:"సాధారణం" };
+    const push = () => {
+        if (buffer.trim().length > 80) {
+            articles.push({ text: buffer.trim(), img });
+        }
+        buffer = "";
+        img = null;
     };
 
-    lines.forEach(l=>{
-        l=l.replace(/^\[[^\]]+\]\s*[^:]+:\s*/,"").trim();
-        if(!l || /image omitted|^end$/i.test(l)) return;
+    lines.forEach(l => {
+        l = l.replace(/^\[[^\]]+\]\s*[^:]+:\s*/, "").trim();
+        if (!l || /image omitted|^end$/i.test(l)) return;
 
-        const img=l.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
-        if(img){ current.image=imageMap[img[1]]; return; }
+        const m = l.match(/<attached:\s*(.*?\.(jpg|png|jpeg))/i);
+        if (m) { img = imageMap[m[1]]; return; }
 
-        current.body+=l+"\n";
-        for(let c in categories)
-            if(categories[c].some(k=>l.includes(k))) current.category=c;
+        buffer += l + "\n";
     });
+
     push();
     return articles;
 }
 
-function titleFrom(text){
-    return text.split("\n")[0].substring(0,60);
+function titleFrom(text) {
+    return text.split("\n")[0].slice(0, 55);
 }
 
-function buildPages(data){
-    pages=[];
-    let idx=0;
-    while(idx<data.length){
-        const page=document.createElement("div");
-        page.className="page";
-        page.innerHTML=`
+function createPages(articles) {
+    pages = [];
+    let i = 0;
+
+    while (i < articles.length) {
+        const page = document.createElement("div");
+        page.className = "page";
+        page.innerHTML = `
         <div class="header">
-            <div class="category-ribbon">${data[idx].category}</div>
             <h1>జనం న్యూస్</h1>
-            <div class="header-meta">
+            <div class="meta">
                 <span>VOL 01</span>
                 <span>${new Date().toLocaleDateString('te-IN')}</span>
             </div>
         </div>
         <div class="columns"></div>`;
-        const col=page.querySelector(".columns");
 
-        while(idx<data.length){
-            const a=data[idx];
-            const box=document.createElement("div");
-            box.className="news-box";
-            box.innerHTML=`<h2>${titleFrom(a.body)}</h2>${a.image?`<img src="${a.image}">`:""}<p>${a.body}</p>`;
-            col.appendChild(box);
-            if(page.scrollHeight>page.clientHeight+5){
-                col.removeChild(box);
+        const col = page.querySelector(".columns");
+
+        while (i < articles.length) {
+            const a = articles[i];
+            const art = document.createElement("div");
+            art.className = "article";
+            art.innerHTML = `
+                <h2>${titleFrom(a.text)}</h2>
+                ${a.img ? `<img src="${a.img}">` : ""}
+                <p>${a.text}</p>
+            `;
+            col.appendChild(art);
+
+            if (col.scrollHeight > col.clientHeight + 5) {
+                col.removeChild(art);
                 break;
             }
-            idx++;
+            i++;
         }
+
         pages.push(page);
     }
 }
 
-function showPage(n){
-    if(n<0||n>=pages.length) return;
-    currentPage=n;
-    paper.innerHTML="";
-    paper.appendChild(pages[n]);
-    pageInfo.innerText=`Page ${n+1} / ${pages.length}`;
+function showPage(n) {
+    if (n < 0 || n >= pages.length) return;
+    viewer.innerHTML = "";
+    viewer.appendChild(pages[n]);
+    currentPage = n;
+    pageInfo.innerText = `Page ${n + 1} / ${pages.length}`;
 }
-function nextPage(){ showPage(currentPage+1); }
-function prevPage(){ showPage(currentPage-1); }
+
+function nextPage() { showPage(currentPage + 1); }
+function prevPage() { showPage(currentPage - 1); }
 </script>
 
 </body>
