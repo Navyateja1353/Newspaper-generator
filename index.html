@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="te">
 <head>
@@ -91,7 +92,7 @@ body {
 
 .news-box img {
     width: 100%;
-    max-height: 250px;
+    max-height: 240px;
     object-fit: contain;
     margin-bottom: 8px;
     border: 1px solid #ddd;
@@ -118,6 +119,7 @@ body {
 <script>
 let imageMap = {};
 
+/* CATEGORY KEYWORDS */
 const categories = {
     "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "మంత్రి", "ముఖ్యమంత్రి", "పార్టీ"],
     "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం"],
@@ -128,6 +130,7 @@ const categories = {
     "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "హత్య", "దోపిడీ"]
 };
 
+/* LOAD ZIP */
 zipInput.onchange = async e => {
     const zip = await JSZip.loadAsync(e.target.files[0]);
     imageMap = {};
@@ -145,15 +148,16 @@ zipInput.onchange = async e => {
     render(parseArticles(text));
 };
 
-/* PARSE – NO SENDER, NO END */
+/* CLEAN + PARSE TEXT */
 function parseArticles(text) {
     const lines = text.split(/\r?\n/);
     let articles = [];
     let current = { body: "", image: null, category: "సాధారణం" };
 
     const push = () => {
-        if (current.body.trim().length > 50) {
-            articles.push({ ...current });
+        const clean = current.body.trim().replace(/\n{2,}/g, "\n");
+        if (clean.length > 40) {
+            articles.push({ ...current, body: clean });
         }
         current = { body: "", image: null, category: "సాధారణం" };
     };
@@ -162,24 +166,34 @@ function parseArticles(text) {
         line = line.trim();
         if (!line) return;
 
+        /* REMOVE image omitted */
+        if (/image omitted/i.test(line)) return;
+
+        /* REMOVE End */
+        if (/^end$/i.test(line)) return;
+
+        /* REAL IMAGE */
         const img = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (img) {
             current.image = imageMap[img[1].trim()] || null;
             return;
         }
 
-        // REMOVE timestamp & sender completely
-        const clean = line.replace(/^\[.*?\]\s*.*?:\s*/, "");
+        /* REMOVE timestamp + sender */
+        line = line.replace(/^\[[^\]]+\]\s*[^:]+:\s*/, "");
 
-        // New article detection
-        if (clean.length < 80 && current.body.length > 250) {
+        if (!line) return;
+
+        /* AUTO ARTICLE SPLIT */
+        if (line.length < 80 && current.body.length > 250) {
             push();
         }
 
-        current.body += clean + "\n";
+        current.body += line + "\n";
 
+        /* CATEGORY */
         for (let cat in categories) {
-            if (categories[cat].some(k => clean.includes(k))) {
+            if (categories[cat].some(k => line.includes(k))) {
                 current.category = cat;
             }
         }
@@ -195,7 +209,7 @@ function generateTitle(text) {
     return line ? line.substring(0, 70) : "ప్రధాన వార్త";
 }
 
-/* RENDER – 3 COLUMNS */
+/* RENDER NEWSPAPER */
 function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
