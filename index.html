@@ -1,273 +1,262 @@
 <!DOCTYPE html>
 <html lang="te">
 <head>
-    <meta charset="UTF-8">
-    <title>జనం న్యూస్ - Newspaper Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<title>జనం న్యూస్ - పూర్తి వార్తల ఎడిషన్</title>
 
-    <style>
-        @media print {
-            #ui { display: none; }
-            body { background: white; }
-            .page { margin: 0; border: none; }
-        }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
-        * { box-sizing: border-box; }
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            margin: 0;
-            background: #333;
-            font-family: 'Noto Sans Telugu', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+@page { size: A4; margin: 0; }
 
-        #ui {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            width: 100%;
-            border-bottom: 2px solid #ddd;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
+body {
+    background: #222;
+    font-family: 'Noto Sans Telugu', sans-serif;
+    padding-bottom: 50px;
+}
 
-        .page {
-            width: 210mm;
-            height: 297mm;
-            background: white;
-            margin: 20px 0;
-            padding: 12mm;
-            border: 6px double black;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+#ui {
+    background: white;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 5px solid #b91c1c;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
 
-        .header {
-            text-align: center;
-            border-bottom: 4px solid black;
-            margin-bottom: 5mm;
-            flex-shrink: 0;
-        }
+.page {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    margin: 10mm auto;
+    padding: 12mm;
+    border: 6px double black;
+    page-break-after: always;
+}
 
-        .header h1 {
-            font-size: 55px;
-            color: #b91c1c;
-            margin: 0;
-            font-weight: 800;
-            letter-spacing: -1px;
-        }
+.header {
+    text-align: center;
+    border-bottom: 3px solid black;
+    margin-bottom: 5mm;
+}
 
-        .meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            font-weight: bold;
-            border-top: 1px solid black;
-            padding: 4px 10px;
-            margin-top: 5px;
-        }
+.header h1 {
+    font-size: 48px;
+    color: #b91c1c;
+    font-weight: 800;
+}
 
-        .columns {
-            column-count: 3;
-            column-gap: 15px;
-            column-rule: 0.5px solid #aaa;
-            flex-grow: 1;
-            text-align: justify;
-            /* Height must be controlled to trigger column wrap */
-            height: 235mm; 
-        }
+.header-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: bold;
+    border-top: 1px solid black;
+    padding: 5px 10px;
+}
 
-        .article {
-            break-inside: avoid;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-        }
+.category-ribbon {
+    background: #b91c1c;
+    color: white;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    display: inline-block;
+    margin-bottom: 5px;
+}
 
-        .article h2 {
-            font-size: 15px;
-            line-height: 1.3;
-            color: #000;
-            margin-top: 0;
-            border-bottom: 2px solid #b91c1c;
-            display: inline-block;
-            margin-bottom: 6px;
-        }
+.columns {
+    column-count: 3;
+    column-gap: 15px;
+    column-rule: 0.5px solid #ccc;
+    text-align: justify;
+}
 
-        .article img {
-            width: 100%;
-            max-height: 180px;
-            object-fit: cover;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-        }
+.news-box {
+    border: 1px solid black;
+    padding: 8px;
+    margin-bottom: 15px;
+    break-inside: avoid-column;
+}
 
-        .article p {
-            font-size: 11px;
-            line-height: 1.6;
-            margin: 0;
-            white-space: pre-wrap;
-            color: #222;
-        }
+.news-box h2 {
+    font-size: 15px;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #b91c1c;
+}
 
-        button {
-            padding: 10px 20px;
-            background: #b91c1c;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 4px;
-        }
+.news-box img {
+    width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+    margin-bottom: 8px;
+    border: 1px solid #ddd;
+}
 
-        button:hover { background: #991b1b; }
-    </style>
+.news-box p {
+    font-size: 11.5px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+</style>
 </head>
 
 <body>
 
 <div id="ui">
-    <h3>📰 జనం న్యూస్ – Newspaper Generator</h3>
+    <h2>📰 జనం న్యూస్ - Full Newspaper Generator</h2>
     <input type="file" id="zipInput" accept=".zip">
-    <button onclick="window.print()">Print to PDF</button>
+    <p>Politics | Sports | Movies | Technology | Education | Agriculture | Crime</p>
 </div>
 
 <div id="paper"></div>
 
 <script>
-    let imageMap = {};
+let imageMap = {};
 
-    document.getElementById('zipInput').onchange = async e => {
-        const file = e.target.files[0];
-        if (!file) return;
+/* CATEGORY KEYWORDS */
+const categories = {
+    "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "మంత్రి", "ముఖ్యమంత్రి", "పార్టీ"],
+    "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం"],
+    "సినిమా": ["సినిమా", "నటుడు", "నటి", "దర్శకుడు", "ట్రైలర్"],
+    "సాంకేతికం": ["టెక్నాలజీ", "మొబైల్", "సాఫ్ట్‌వేర్", "AI", "స్టార్ట్‌అప్"],
+    "విద్య": ["విద్య", "విద్యార్థులు", "స్కూల్", "కాలేజీ", "పరీక్ష"],
+    "వ్యవసాయం": ["రైతు", "పంట", "విత్తనాలు", "వరి", "పత్తి"],
+    "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "హత్య", "దోపిడీ"]
+};
 
-        const zip = await JSZip.loadAsync(file);
-        imageMap = {};
+/* LOAD ZIP */
+zipInput.onchange = async e => {
+    const zip = await JSZip.loadAsync(e.target.files[0]);
+    imageMap = {};
 
-        // 1. Process Images
-        for (const filename in zip.files) {
-            if (/\.(jpg|jpeg|png)$/i.test(filename)) {
-                const blob = await zip.file(filename).async("blob");
-                imageMap[filename.split("/").pop()] = URL.createObjectURL(blob);
-            }
+    for (let f in zip.files) {
+        if (/\.(jpg|jpeg|png)$/i.test(f)) {
+            const blob = await zip.file(f).async("blob");
+            imageMap[f.split('/').pop()] = URL.createObjectURL(blob);
         }
+    }
 
-        // 2. Process Text
-        const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
-        if (!txtFile) {
-            alert("No .txt file found in ZIP");
-            return;
+    const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
+    const text = await zip.file(txtFile).async("text");
+
+    render(parseArticles(text));
+};
+
+/* CLEAN + PARSE TEXT */
+function parseArticles(text) {
+    const lines = text.split(/\r?\n/);
+    let articles = [];
+    let current = { body: "", image: null, category: "సాధారణం" };
+
+    const push = () => {
+        const clean = current.body.trim().replace(/\n{2,}/g, "\n");
+        if (clean.length > 40) {
+            articles.push({ ...current, body: clean });
         }
-        const text = await zip.file(txtFile).async("text");
-
-        const articles = parseArticles(text);
-        renderPages(articles);
+        current = { body: "", image: null, category: "సాధారణం" };
     };
 
-    function parseArticles(text) {
-        const lines = text.split(/\r?\n/);
-        let articles = [];
-        let buffer = "";
-        let currentImage = null;
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
 
-        const pushArticle = () => {
-            if (buffer.trim().length > 50) {
-                articles.push({ 
-                    text: buffer.trim(), 
-                    image: currentImage 
-                });
-            }
-            buffer = "";
-            currentImage = null;
-        };
+        /* REMOVE image omitted */
+        if (/image omitted/i.test(line)) return;
 
-        lines.forEach(line => {
-            // Remove WhatsApp timestamps/metadata if present
-            line = line.replace(/^\[[^\]]+\]\s*[^:]+:\s*/, "").trim();
-            if (!line || /image omitted|^end$/i.test(line)) return;
+        /* REMOVE End */
+        if (/^end$/i.test(line)) return;
 
-            // Detect image tags
-            const imgMatch = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
-            if (imgMatch) {
-                if (buffer) pushArticle();
-                currentImage = imageMap[imgMatch[1]];
-                return;
-            }
+        /* REAL IMAGE */
+        const img = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
+        if (img) {
+            current.image = imageMap[img[1].trim()] || null;
+            return;
+        }
 
-            // Logic to separate stories: if line is short and we have content, it's a new headline
-            if (line.length < 60 && buffer.length > 300) {
-                pushArticle();
-            }
-            buffer += line + "\n";
-        });
+        /* REMOVE timestamp + sender */
+        line = line.replace(/^\[[^\]]+\]\s*[^:]+:\s*/, "");
 
-        pushArticle();
-        return articles;
-    }
+        if (!line) return;
 
-    function titleFrom(text) {
-        return text.split("\n")[0].substring(0, 70);
-    }
+        /* AUTO ARTICLE SPLIT */
+        if (line.length < 80 && current.body.length > 250) {
+            push();
+        }
 
-    function createNewPage(num) {
-        const page = document.createElement("div");
-        page.className = "page";
-        page.innerHTML = `
-            <div class="header">
-                <h1>జనం న్యూస్</h1>
-                <div class="meta">
-                    <span>సంపుటి 1 | సంచిక ${num}</span>
-                    <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
-                    <span>పేజీ: ${num}</span>
-                </div>
-            </div>
-            <div class="columns"></div>
-        `;
-        document.getElementById('paper').appendChild(page);
-        return page.querySelector(".columns");
-    }
+        current.body += line + "\n";
 
-    async function renderPages(articles) {
-        const paper = document.getElementById('paper');
-        paper.innerHTML = "";
-        
-        let pageNum = 1;
-        let currentColumnContainer = createNewPage(pageNum);
-
-        for (const artData of articles) {
-            const artEl = document.createElement("div");
-            artEl.className = "article";
-            
-            // Generate content
-            const title = titleFrom(artData.text);
-            const content = artData.text.replace(title, "").trim();
-            
-            artEl.innerHTML = `
-                <h2>${title}</h2>
-                ${artData.image ? `<img src="${artData.image}">` : ""}
-                <p>${content}</p>
-            `;
-
-            currentColumnContainer.appendChild(artEl);
-
-            // Check if current article pushed the page over the limit
-            // A4 page content height is roughly 900-1000px
-            if (currentColumnContainer.scrollHeight > 920) {
-                // If it overflows, move this article to a new page
-                currentColumnContainer.removeChild(artEl);
-                pageNum++;
-                currentColumnContainer = createNewPage(pageNum);
-                currentColumnContainer.appendChild(artEl);
+        /* CATEGORY */
+        for (let cat in categories) {
+            if (categories[cat].some(k => line.includes(k))) {
+                current.category = cat;
             }
         }
+    });
+
+    push();
+    return articles;
+}
+
+/* TITLE FROM CONTENT */
+function generateTitle(text) {
+    const line = text.split("\n").find(l => l.length > 20);
+    return line ? line.substring(0, 70) : "ప్రధాన వార్త";
+}
+
+/* RENDER NEWSPAPER */
+function render(data) {
+    const paper = document.getElementById("paper");
+    paper.innerHTML = "";
+
+    const grouped = {};
+    data.forEach(a => {
+        if (!grouped[a.category]) grouped[a.category] = [];
+        grouped[a.category].push(a);
+    });
+
+    let pageNo = 1;
+
+    for (let cat in grouped) {
+        for (let i = 0; i < grouped[cat].length; i += 6) {
+            const page = document.createElement("div");
+            page.className = "page";
+
+            page.innerHTML = `
+                <div class="header">
+                    <div class="category-ribbon">${cat}</div>
+                    <h1>జనం న్యూస్</h1>
+                    <div class="header-meta">
+                        <span>VOLUME: 01</span>
+                        <span>తేదీ: ${new Date().toLocaleDateString('te-IN')}</span>
+                        <span>పేజీ: ${pageNo++}</span>
+                    </div>
+                </div>
+                <div class="columns"></div>
+            `;
+
+            const col = page.querySelector(".columns");
+
+            grouped[cat].slice(i, i + 6).forEach(item => {
+                const box = document.createElement("div");
+                box.className = "news-box";
+
+                box.innerHTML = `
+                    <h2>${generateTitle(item.body)}</h2>
+                    ${item.image ? `<img src="${item.image}">` : ""}
+                    <p>${item.body}</p>
+                `;
+                col.appendChild(box);
+            });
+
+            paper.appendChild(page);
+        }
     }
+}
 </script>
 
 </body>
