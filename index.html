@@ -5,7 +5,6 @@
 <title>జనం న్యూస్ - పూర్తి వార్తల ఎడిషన్</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -46,7 +45,7 @@ body {
 }
 
 .header h1 {
-    font-size: 50px;
+    font-size: 48px;
     color: #b91c1c;
     font-weight: 800;
 }
@@ -82,7 +81,6 @@ body {
     padding: 8px;
     margin-bottom: 15px;
     break-inside: avoid-column;
-    page-break-inside: avoid;
 }
 
 .news-box h2 {
@@ -110,9 +108,9 @@ body {
 <body>
 
 <div id="ui">
-    <h2>📰 జనం న్యూస్ - Full Content Version</h2>
+    <h2>📰 జనం న్యూస్ - Full Newspaper Generator</h2>
     <input type="file" id="zipInput" accept=".zip">
-    <p>వర్గాలు: రాజకీయం | విద్య | క్రీడలు | వ్యవసాయం | నేరాలు</p>
+    <p>Categories: Politics | Sports | Movies | Technology | Education | Agriculture | Crime</p>
 </div>
 
 <div id="paper"></div>
@@ -120,12 +118,15 @@ body {
 <script>
 let imageMap = {};
 
+/* CATEGORY KEYWORDS */
 const categories = {
-    "విద్య & శిక్షణ": ["విద్య", "విద్యార్థులు", "స్కూల్", "కాలేజీ", "పరీక్ష"],
     "రాజకీయం": ["ప్రభుత్వం", "ఎన్నికలు", "మంత్రి", "ముఖ్యమంత్రి", "పార్టీ"],
+    "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు", "విజయం"],
+    "సినిమా": ["సినిమా", "నటుడు", "నటి", "దర్శకుడు", "ట్రైలర్"],
+    "సాంకేతికం": ["టెక్నాలజీ", "మొబైల్", "సాఫ్ట్‌వేర్", "AI", "స్టార్ట్‌అప్"],
+    "విద్య": ["విద్య", "విద్యార్థులు", "స్కూల్", "కాలేజీ", "పరీక్ష"],
     "వ్యవసాయం": ["రైతు", "పంట", "విత్తనాలు", "వరి", "పత్తి"],
-    "క్రీడలు": ["క్రికెట్", "మ్యాచ్", "క్రీడలు"],
-    "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "హత్య"]
+    "నేరాలు": ["పోలీస్", "అరెస్ట్", "కేసు", "హత్య", "దోపిడీ"]
 };
 
 zipInput.onchange = async e => {
@@ -142,37 +143,41 @@ zipInput.onchange = async e => {
     const txtFile = Object.keys(zip.files).find(f => f.endsWith(".txt"));
     const text = await zip.file(txtFile).async("text");
 
-    render(parseAndCategorize(text));
+    render(parseArticles(text));
 };
 
-function parseAndCategorize(text) {
+/* PARSER – NO END, NO SENDER */
+function parseArticles(text) {
     const lines = text.split(/\r?\n/);
     let articles = [];
-    let current = { text: "", image: null, category: "జనరల్" };
+    let current = { text: "", image: null, category: "సాధారణం" };
 
-    const pushArticle = () => {
-        if (current.text.trim().length > 20) {
+    const push = () => {
+        if (current.text.trim().length > 25) {
             articles.push({ ...current });
         }
-        current = { text: "", image: null, category: "జనరల్" };
+        current = { text: "", image: null, category: "సాధారణం" };
     };
 
     lines.forEach(line => {
         line = line.trim();
         if (!line) return;
 
+        /* Image */
         const img = line.match(/<attached:\s*(.*?\.(jpg|jpeg|png))/i);
         if (img) {
             current.image = imageMap[img[1].trim()] || null;
             return;
         }
 
-        if (/^END$|🔚/i.test(line)) {
-            pushArticle();
-            return;
+        /* Remove timestamp & sender completely */
+        const clean = line.replace(/^\[.*?\]\s*.*?:\s*/, "");
+
+        /* New article if headline-like line */
+        if (clean.length < 80 && current.text.length > 200) {
+            push();
         }
 
-        const clean = line.replace(/^\[.*?\]\s*.*?:\s*/, "");
         current.text += clean + "\n";
 
         for (let cat in categories) {
@@ -182,10 +187,11 @@ function parseAndCategorize(text) {
         }
     });
 
-    pushArticle();
+    push();
     return articles;
 }
 
+/* RENDER – STRICT 3 COLUMNS */
 function render(data) {
     const paper = document.getElementById("paper");
     paper.innerHTML = "";
@@ -202,6 +208,7 @@ function render(data) {
         for (let i = 0; i < grouped[cat].length; i += 6) {
             const page = document.createElement("div");
             page.className = "page";
+
             page.innerHTML = `
                 <div class="header">
                     <div class="category-ribbon">${cat}</div>
